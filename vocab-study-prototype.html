@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>字幕生字學習測試台</title>
+<style>
+  :root{
+    --film:#101820;
+    --ink:#16202A;
+    --ink2:#38434F;
+    --muted:#6B7784;
+    --paper:#ECEFEA;
+    --surface:#FFFFFF;
+    --line:#D3D9D2;
+    --caption:#E8B33C;
+    --ok:#2F6B4F;
+    --no:#A33B32;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    --serif:Georgia,"Iowan Old Style","Times New Roman","Songti TC",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:720px;margin:0 auto;padding:22px 20px 96px}
+
+  /* ---------- chrome ---------- */
+  .topbar{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{font-size:17px;font-weight:600;letter-spacing:.01em;margin:0}
+  .brand span{display:block;font-size:12.5px;font-weight:400;color:var(--muted);letter-spacing:.02em}
+  .whoami{font-size:13px;color:var(--ink2)}
+  .whoami b{font-weight:600}
+  .rule{height:1px;background:var(--line);margin:14px 0 26px}
+  .track{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin:14px 0 26px}
+  .track i{display:block;height:100%;background:var(--ink);width:0;transition:width .35s ease}
+
+  h2.screen-title{font-size:22px;font-weight:600;margin:0 0 6px;letter-spacing:.01em}
+  p.lede{margin:0 0 26px;color:var(--ink2);max-width:52ch}
+
+  /* ---------- form ---------- */
+  .field{margin-bottom:20px}
+  .field label{display:block;font-size:13.5px;font-weight:600;margin-bottom:7px}
+  .field .hint{font-size:12.5px;color:var(--muted);font-weight:400;margin-left:6px}
+  input[type=text],select{
+    width:100%;padding:11px 13px;font:inherit;font-size:15px;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:3px;
+  }
+  select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--ink2) 50%),linear-gradient(135deg,var(--ink2) 50%,transparent 50%);
+    background-position:calc(100% - 19px) 50%,calc(100% - 14px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:40px}
+  input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+  .segment{display:flex;gap:8px;flex-wrap:wrap}
+  .segment button{
+    flex:1;min-width:88px;padding:11px 8px;font:inherit;font-size:14.5px;
+    background:var(--surface);border:1px solid var(--line);border-radius:3px;color:var(--ink2);cursor:pointer
+  }
+  .segment button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font:inherit;font-size:15px;font-weight:600;padding:12px 22px;border-radius:3px;cursor:pointer;
+    background:var(--ink);color:#fff;border:1px solid var(--ink)
+  }
+  .btn:hover{background:#000}
+  .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn--ghost{background:transparent;color:var(--ink2);border-color:var(--line);font-weight:500}
+  .btn--ghost:hover{background:var(--surface);color:var(--ink)}
+  .btn--small{font-size:13.5px;padding:9px 15px}
+  .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:26px}
+  .spacer{flex:1}
+
+  /* ---------- flashcard ---------- */
+  .stage{perspective:1600px}
+  .card{position:relative;height:430px;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.75,.2,1)}
+  .card.flipped{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:4px;overflow:hidden;display:flex;flex-direction:column}
+  .face--front{background:var(--film);box-shadow:0 1px 0 rgba(22,32,42,.16)}
+  .face--back{transform:rotateY(180deg);background:var(--surface);border:1px solid var(--line)}
+
+  .still{
+    flex:1;position:relative;display:flex;align-items:center;justify-content:center;
+    background:
+      repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 9px,transparent 9px 18px),
+      #1B2732;
+  }
+  .still img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .still .ph{color:rgba(255,255,255,.4);font-size:13px;letter-spacing:.04em;text-align:center;padding:0 24px}
+  .still .ph b{display:block;color:rgba(255,255,255,.62);font-size:14px;font-weight:600;margin-bottom:4px}
+  .cliplabel{
+    position:absolute;top:14px;left:16px;font-size:11.5px;color:rgba(255,255,255,.55);
+    background:rgba(0,0,0,.45);padding:4px 9px;border-radius:2px
+  }
+  .captionbar{padding:22px 26px 26px;background:var(--film)}
+  .captionbar .subtitle{
+    font-family:var(--serif);font-size:21px;line-height:1.55;color:#F2F4F5;margin:0;text-align:center
+  }
+  .captionbar mark{background:none;color:var(--caption);font-weight:700;box-shadow:inset 0 -2px 0 rgba(232,179,60,.45)}
+  .captionbar .cue{margin:14px 0 0;text-align:center;font-size:12.5px;color:rgba(255,255,255,.45)}
+
+  .back-body{padding:28px 30px;overflow-y:auto;flex:1}
+  .word{font-family:var(--serif);font-size:34px;line-height:1.2;margin:0 0 12px;letter-spacing:-.01em}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px}
+  .chip{font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:2px;color:var(--ink2);background:#F6F8F5}
+  .chip--cefr{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+  .def{font-family:var(--serif);font-size:17px;line-height:1.6;margin:0 0 6px}
+  .def-zh{font-size:15px;color:var(--ink2);margin:0 0 20px}
+  .example{border-left:2px solid var(--caption);padding:2px 0 2px 14px;margin:0 0 22px}
+  .example p{margin:0;font-family:var(--serif);font-size:16px;color:var(--ink2);font-style:italic}
+  .srcline{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .stamp{background:#F0F2EE;border:1px solid var(--line);padding:2px 7px;border-radius:2px;color:var(--ink2)}
+
+  .deckmeta{display:flex;justify-content:space-between;align-items:center;margin:16px 2px 0;font-size:13px;color:var(--muted)}
+
+  /* ---------- quiz ---------- */
+  .qcount{font-size:13px;color:var(--muted);margin:0 0 10px}
+  .stem{font-family:var(--serif);font-size:23px;line-height:1.6;margin:0 0 28px}
+  .stem .blank{display:inline-block;min-width:110px;border-bottom:2px solid var(--caption);vertical-align:baseline}
+  .options{display:flex;flex-direction:column;gap:10px}
+  .opt{
+    display:flex;align-items:center;gap:14px;width:100%;text-align:left;cursor:pointer;
+    font:inherit;font-family:var(--serif);font-size:17px;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:15px 18px
+  }
+  .opt:hover{border-color:var(--ink2)}
+  .opt .k{
+    flex:none;width:23px;height:23px;border-radius:2px;background:#F0F2EE;border:1px solid var(--line);
+    font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted);
+    display:flex;align-items:center;justify-content:center
+  }
+  .opt:hover .k{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* ---------- result ---------- */
+  .scoreline{display:flex;align-items:flex-end;gap:14px;margin:0 0 4px}
+  .scorenum{font-family:var(--serif);font-size:72px;line-height:.9;letter-spacing:-.03em}
+  .scoreof{font-size:18px;color:var(--muted);padding-bottom:8px}
+  .statrow{display:flex;gap:26px;flex-wrap:wrap;margin:18px 0 30px;font-size:14px;color:var(--ink2)}
+  .statrow div b{display:block;font-size:19px;font-weight:600;color:var(--ink);font-family:var(--serif)}
+
+  h3.sub{font-size:15px;font-weight:600;margin:32px 0 12px}
+  .review{border-top:1px solid var(--line)}
+  .rev{border-bottom:1px solid var(--line);padding:14px 0 14px 34px;position:relative}
+  .rev .mark{position:absolute;left:0;top:15px;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+  .rev.ok .mark{background:var(--ok)}
+  .rev.no .mark{background:var(--no)}
+  .rev .qw{font-family:var(--serif);font-size:17px;margin:0 0 4px}
+  .rev .ans{font-size:13.5px;color:var(--ink2);margin:0 0 6px}
+  .rev .ans s{color:var(--no);text-decoration-thickness:1px}
+  .rev .trace{font-size:12.5px;color:var(--muted);display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+
+  .savebox{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px;margin-top:28px}
+  .savebox h3{margin:0 0 6px;font-size:15px}
+  .savebox p{margin:0 0 16px;font-size:13.5px;color:var(--ink2)}
+  .savebox .warn{color:var(--no);font-weight:600}
+  textarea{width:100%;height:120px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+    border:1px solid var(--line);border-radius:3px;padding:10px;background:#F8FAF7;color:var(--ink2);resize:vertical}
+
+  .errbox{background:#FBEFEE;border:1px solid #E3C3BF;border-radius:4px;padding:16px 18px;margin-bottom:24px}
+  .errbox h3{margin:0 0 8px;font-size:14px;color:var(--no)}
+  .errbox ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
+
+  .empty{background:var(--surface);border:1px dashed var(--line);border-radius:4px;padding:28px;text-align:center;color:var(--ink2);font-size:14.5px}
+
+  [hidden]{display:none !important}
+  @media (max-width:560px){
+    .row2{grid-template-columns:1fr}
+    .card{height:470px}
+    .captionbar .subtitle{font-size:19px}
+    .scorenum{font-size:60px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .card,.track i{transition:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <h1 class="brand">字幕生字學習測試台 <span>Flashcard 學習 → 挖空測驗 → 自動記分</span></h1>
+    <div class="whoami" id="whoami" hidden></div>
+  </div>
+  <div class="rule"></div>
+  <div class="track" id="track" hidden><i></i></div>
+
+  <div id="errbox" class="errbox" hidden>
+    <h3>教材／考題資料有問題，請先修正再測試</h3>
+    <ul id="errlist"></ul>
+  </div>
+
+  <!-- ══════════ 開始畫面 ══════════ -->
+  <section id="screen-setup">
+    <h2 class="screen-title">開始前先填三件事</h2>
+    <p class="lede">這三個欄位會寫進實驗紀錄，用來對應前後測資料。填完就可以開始，不需要帳號。</p>
+
+    <div class="row2">
+      <div class="field">
+        <label for="pid">受試者編號</label>
+        <input type="text" id="pid" placeholder="P01" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="age">年齡層</label>
+        <select id="age">
+          <option value="">請選擇</option>
+          <option>15-24</option><option>25-34</option><option>35-44</option>
+          <option>45-54</option><option>55+</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>詞彙組 <span class="hint">A/B 實驗分組，另一半的詞在 Duolingo 學</span></label>
+      <div class="segment" id="seg-set">
+        <button type="button" data-val="A" aria-pressed="true">A 組</button>
+        <button type="button" data-val="B" aria-pressed="false">B 組</button>
+        <button type="button" data-val="ALL" aria-pressed="false">全部（測試用）</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="cat">影片類別</label>
+      <select id="cat"></select>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="go">開始學習</button>
+      <span id="deckcount" class="whoami"></span>
+    </div>
+  </section>
+
+  <!-- ══════════ 學習階段 ══════════ -->
+  <section id="screen-learn" hidden>
+    <h2 class="screen-title">先看卡，翻到背面看定義</h2>
+    <p class="lede">看完一張再按下一張。每張卡停留多久會自動記錄，不用計時。</p>
+
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="face face--front">
+          <div class="still" id="still">
+            <div class="cliplabel" id="cliplabel"></div>
+            <div class="ph" id="stillph"><b>截圖佔位</b>等 Jessica 的候選教材清單進來替換</div>
+          </div>
+          <div class="captionbar">
+            <p class="subtitle" id="subtitle"></p>
+            <p class="cue">按卡片或空白鍵翻面</p>
+          </div>
+        </div>
+        <div class="face face--back">
+          <div class="back-body">
+            <p class="word" id="b-word"></p>
+            <div class="chips" id="b-chips"></div>
+            <p class="def" id="b-def"></p>
+            <p class="def-zh" id="b-defzh"></p>
+            <div class="example"><p id="b-ex"></p></div>
+            <div class="srcline">
+              <span id="b-src"></span>
+              <span class="stamp" id="b-stamp"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="deckmeta">
+      <span id="deckpos"></span>
+      <span>空白鍵翻面　←　→　換卡</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn--ghost btn btn--small" id="prev">上一張</button>
+      <button class="btn btn--small" id="next">下一張</button>
+      <span class="spacer"></span>
+      <button class="btn" id="toquiz" hidden>開始測驗</button>
+    </div>
+  </section>
+
+  <!-- ══════════ 測驗階段 ══════════ -->
+  <section id="screen-quiz" hidden>
+    <p class="qcount" id="qcount"></p>
+    <p class="stem" id="stem"></p>
+    <div class="options" id="options"></div>
+    <div class="actions"><span class="whoami">作答後直接進下一題，全部答完才看對錯。</span></div>
+  </section>
+
+  <!-- ══════════ 分數畫面 ══════════ -->
+  <section id="screen-result" hidden>
+    <h2 class="screen-title">測驗結束</h2>
+    <div class="scoreline">
+      <span class="scorenum" id="r-correct">0</span>
+      <span class="scoreof" id="r-of"></span>
+    </div>
+    <div class="statrow">
+      <div>正確率<b id="r-acc"></b></div>
+      <div>學習花費<b id="r-learn"></b></div>
+      <div>作答花費<b id="r-quiz"></b></div>
+      <div>平均每題<b id="r-avg"></b></div>
+    </div>
+
+    <h3 class="sub">逐題回顧與來源對照</h3>
+    <div class="review" id="review"></div>
+
+    <div class="savebox">
+      <h3>存下這次的紀錄</h3>
+      <p><span class="warn">紀錄只存在這個分頁</span>，關掉就會消失。請先下載或複製，再關視窗。</p>
+      <div class="actions" style="margin-top:0">
+        <button class="btn btn--small" id="dl-json">下載 JSON</button>
+        <button class="btn--ghost btn btn--small" id="dl-csv">下載 CSV</button>
+        <button class="btn--ghost btn btn--small" id="copy">複製 JSON</button>
+        <span class="whoami" id="copied"></span>
+      </div>
+      <p style="margin:16px 0 8px">下載失敗的話，從這裡全選複製：</p>
+      <textarea id="dump" readonly></textarea>
+    </div>
+
+    <div class="actions">
+      <button class="btn--ghost btn btn--small" id="again">換一位受試者</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DATA — Jessica 的教材與 Jay 的考題都換這一段就好
+   欄位規格見 Melody_W1-3_技術規格.md 第 3 節
+   目前全部是佔位資料（自撰例句，非影片原文）
+   ═══════════════════════════════════════════════════════════ */
+const DATA = {
+  categories: [
+    { id: "sitcom",   name: "美劇日常對話" },
+    { id: "shorts",   name: "YT shorts 幽默短片" },
+    { id: "standup",  name: "脫口秀時事評論" },
+    { id: "talkshow", name: "Talk show 訪談" }
+  ],
+
+  cards: [
+    { id:"c-sitcom-01", category:"sitcom", set:"A", targetWord:"catch up", pos:"phrasal verb", cefr:"B1",
+      sentence:"We should catch up sometime, it's been forever.",
+      definitionEn:"to meet someone you have not seen for a while and talk",
+      definitionZh:"久沒見面後碰個面、聊聊近況",
+      example:"Let's catch up over coffee next week.",
+      source:{ title:"（待填）影集名稱 S01E03", url:"", timestamp:"00:04:12", screenshot:"" } },
+
+    { id:"c-sitcom-02", category:"sitcom", set:"A", targetWord:"awkward", pos:"adjective", cefr:"B1",
+      sentence:"That was the most awkward dinner of my entire life.",
+      definitionEn:"making you feel embarrassed or uncomfortable",
+      definitionZh:"尷尬的、讓人渾身不對勁的",
+      example:"There was an awkward pause before anyone answered.",
+      source:{ title:"（待填）影集名稱 S02E07", url:"", timestamp:"00:11:48", screenshot:"" } },
+
+    { id:"c-sitcom-03", category:"sitcom", set:"B", targetWord:"crash", pos:"verb", cefr:"B2",
+      sentence:"Do you mind if I crash on your couch tonight?",
+      definitionEn:"to sleep at someone's place, usually for one night and without planning",
+      definitionZh:"（臨時）借住一晚、隨便找地方睡",
+      example:"He crashed at my place after the concert.",
+      source:{ title:"（待填）影集名稱 S01E09", url:"", timestamp:"00:07:33", screenshot:"" } },
+
+    { id:"c-sitcom-04", category:"sitcom", set:"B", targetWord:"bring up", pos:"phrasal verb", cefr:"B1",
+      sentence:"Please don't bring up the wedding in front of her.",
+      definitionEn:"to start talking about a particular subject",
+      definitionZh:"（在談話中）提起某個話題",
+      example:"Nobody wanted to bring up the budget again.",
+      source:{ title:"（待填）影集名稱 S03E02", url:"", timestamp:"00:16:05", screenshot:"" } },
+
+    { id:"c-shorts-01", category:"shorts", set:"A", targetWord:"nailed it", pos:"idiom", cefr:"B2",
+      sentence:"She practiced once and completely nailed it.",
+      definitionEn:"did something perfectly, on the first or only try",
+      definitionZh:"一次就做得完美、一擊命中",
+      example:"The landing was tricky but he nailed it.",
+      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:21", screenshot:"" } },
+
+    { id:"c-shorts-02", category:"shorts", set:"A", targetWord:"sketchy", pos:"adjective", cefr:"B2",
+      sentence:"That shortcut looks a little sketchy to me.",
+      definitionEn:"seeming unsafe, unreliable or not quite trustworthy",
+      definitionZh:"看起來不太可靠、有點可疑或危險",
+      example:"The website looked sketchy, so I closed it.",
+      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:34", screenshot:"" } },
+
+    { id:"c-shorts-03", category:"shorts", set:"B", targetWord:"hyped", pos:"adjective", cefr:"B2",
+      sentence:"Everyone is way too hyped about a sandwich.",
+      definitionEn:"very excited about something, often more than it deserves",
+      definitionZh:"過度興奮、被炒得很熱",
+      example:"Fans were hyped for weeks before the release.",
+      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:12", screenshot:"" } },
+
+    { id:"c-shorts-04", category:"shorts", set:"B", targetWord:"pulled off", pos:"phrasal verb", cefr:"B2",
+      sentence:"I can't believe he pulled off that jump.",
+      definitionEn:"to succeed at something difficult",
+      definitionZh:"成功做成一件很難的事",
+      example:"They pulled off the whole show with two days of practice.",
+      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:45", screenshot:"" } },
+
+    { id:"c-standup-01", category:"standup", set:"A", targetWord:"call out", pos:"phrasal verb", cefr:"B2",
+      sentence:"Somebody has to call out that kind of nonsense.",
+      definitionEn:"to publicly criticise someone for what they did or said",
+      definitionZh:"公開指出並批評某人的問題",
+      example:"She called out the company for ignoring the report.",
+      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:03:58", screenshot:"" } },
+
+    { id:"c-standup-02", category:"standup", set:"A", targetWord:"take", pos:"noun", cefr:"C1",
+      sentence:"Here's my take on the whole situation.",
+      definitionEn:"your personal opinion or way of understanding something",
+      definitionZh:"個人看法、對某事的解讀",
+      example:"What's your take on the new policy?",
+      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:01:27", screenshot:"" } },
+
+    { id:"c-standup-03", category:"standup", set:"B", targetWord:"roasted", pos:"verb", cefr:"C1",
+      sentence:"He roasted the mayor for ten straight minutes.",
+      definitionEn:"made fun of someone harshly, usually to make people laugh",
+      definitionZh:"（帶著玩笑地）狠狠吐槽、消遣某人",
+      example:"The host roasted every guest at the table.",
+      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:06:40", screenshot:"" } },
+
+    { id:"c-standup-04", category:"standup", set:"B", targetWord:"doubled down", pos:"idiom", cefr:"C1",
+      sentence:"Instead of apologizing, they doubled down.",
+      definitionEn:"became even more committed to a position after being criticised",
+      definitionZh:"被質疑後不但不退，反而更強硬地堅持",
+      example:"He doubled down on the claim even after the data came out.",
+      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:09:14", screenshot:"" } },
+
+    { id:"c-talkshow-01", category:"talkshow", set:"A", targetWord:"turning point", pos:"noun", cefr:"B2",
+      sentence:"That audition was the turning point of my career.",
+      definitionEn:"the moment when an important change starts",
+      definitionZh:"轉捩點、情況開始改變的時刻",
+      example:"Losing that job turned out to be a turning point.",
+      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:12:50", screenshot:"" } },
+
+    { id:"c-talkshow-02", category:"talkshow", set:"A", targetWord:"look back on", pos:"phrasal verb", cefr:"B2",
+      sentence:"When I look back on that year, I mostly laugh.",
+      definitionEn:"to think about something that happened in the past",
+      definitionZh:"回頭看、回顧過去的某段經歷",
+      example:"She looks back on her first film with mixed feelings.",
+      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:18:22", screenshot:"" } },
+
+    { id:"c-talkshow-03", category:"talkshow", set:"B", targetWord:"pitched", pos:"verb", cefr:"B2",
+      sentence:"I pitched the idea to three studios before anyone listened.",
+      definitionEn:"presented an idea to someone, hoping they will support it",
+      definitionZh:"向人提案、推銷一個想法",
+      example:"They pitched the project to investors last spring.",
+      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:05:16", screenshot:"" } },
+
+    { id:"c-talkshow-04", category:"talkshow", set:"B", targetWord:"stuck with", pos:"phrasal verb", cefr:"B1",
+      sentence:"I stuck with it because nothing else felt right.",
+      definitionEn:"continued doing something difficult instead of giving up",
+      definitionZh:"堅持下去、沒有中途放棄",
+      example:"He stuck with the same teacher for six years.",
+      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:21:04", screenshot:"" } }
+  ],
+
+  quiz: [
+    { id:"q-sitcom-01", cardId:"c-sitcom-01", category:"sitcom", set:"A", type:"cloze",
+      stem:"We should ___ sometime, it's been forever.",
+      options:["catch up","take over","run into","look after"], answerIndex:0 },
+    { id:"q-sitcom-02", cardId:"c-sitcom-02", category:"sitcom", set:"A", type:"cloze",
+      stem:"That was the most ___ dinner of my entire life.",
+      options:["generous","awkward","formal","urgent"], answerIndex:1 },
+    { id:"q-sitcom-03", cardId:"c-sitcom-03", category:"sitcom", set:"B", type:"cloze",
+      stem:"Do you mind if I ___ on your couch tonight?",
+      options:["stack","crash","settle","fold"], answerIndex:1 },
+    { id:"q-sitcom-04", cardId:"c-sitcom-04", category:"sitcom", set:"B", type:"cloze",
+      stem:"Please don't ___ the wedding in front of her.",
+      options:["bring up","take up","put off","hold on"], answerIndex:0 },
+
+    { id:"q-shorts-01", cardId:"c-shorts-01", category:"shorts", set:"A", type:"cloze",
+      stem:"She practiced once and completely ___.",
+      options:["missed it","nailed it","lost it","called it"], answerIndex:1 },
+    { id:"q-shorts-02", cardId:"c-shorts-02", category:"shorts", set:"A", type:"cloze",
+      stem:"That shortcut looks a little ___ to me.",
+      options:["sketchy","polished","formal","steady"], answerIndex:0 },
+    { id:"q-shorts-03", cardId:"c-shorts-03", category:"shorts", set:"B", type:"cloze",
+      stem:"Everyone is way too ___ about a sandwich.",
+      options:["hyped","bored","strict","calm"], answerIndex:0 },
+    { id:"q-shorts-04", cardId:"c-shorts-04", category:"shorts", set:"B", type:"cloze",
+      stem:"I can't believe he ___ that jump.",
+      options:["pulled off","put down","gave away","ran over"], answerIndex:0 },
+
+    { id:"q-standup-01", cardId:"c-standup-01", category:"standup", set:"A", type:"cloze",
+      stem:"Somebody has to ___ that kind of nonsense.",
+      options:["call out","hand in","look up","turn down"], answerIndex:0 },
+    { id:"q-standup-02", cardId:"c-standup-02", category:"standup", set:"A", type:"cloze",
+      stem:"Here's my ___ on the whole situation.",
+      options:["take","move","reach","turn"], answerIndex:0 },
+    { id:"q-standup-03", cardId:"c-standup-03", category:"standup", set:"B", type:"cloze",
+      stem:"He ___ the mayor for ten straight minutes.",
+      options:["greeted","roasted","quoted","hired"], answerIndex:1 },
+    { id:"q-standup-04", cardId:"c-standup-04", category:"standup", set:"B", type:"cloze",
+      stem:"Instead of apologizing, they ___.",
+      options:["backed off","doubled down","gave in","moved on"], answerIndex:1 },
+
+    { id:"q-talkshow-01", cardId:"c-talkshow-01", category:"talkshow", set:"A", type:"cloze",
+      stem:"That audition was the ___ of my career.",
+      options:["turning point","side note","last resort","running joke"], answerIndex:0 },
+    { id:"q-talkshow-02", cardId:"c-talkshow-02", category:"talkshow", set:"A", type:"cloze",
+      stem:"When I ___ that year, I mostly laugh.",
+      options:["look back on","look up to","look out for","look into"], answerIndex:0 },
+    { id:"q-talkshow-03", cardId:"c-talkshow-03", category:"talkshow", set:"B", type:"cloze",
+      stem:"I ___ the idea to three studios before anyone listened.",
+      options:["pitched","buried","copied","delayed"], answerIndex:0 },
+    { id:"q-talkshow-04", cardId:"c-talkshow-04", category:"talkshow", set:"B", type:"cloze",
+      stem:"I ___ it because nothing else felt right.",
+      options:["stuck with","gave up","passed on","ruled out"], answerIndex:0 }
+  ]
+};
+
+/* ═══════════════════════════════════════════════════════════
+   資料檢查 — 換教材／換考題後會在畫面上直接報錯
+   ═══════════════════════════════════════════════════════════ */
+function validate() {
+  const errs = [];
+  const catIds = new Set(DATA.categories.map(c => c.id));
+  const cardById = new Map();
+
+  DATA.cards.forEach(c => {
+    if (cardById.has(c.id)) errs.push("卡片 id 重複：" + c.id);
+    cardById.set(c.id, c);
+    if (!catIds.has(c.category)) errs.push(c.id + " 的 category「" + c.category + "」不在 categories 清單裡");
+    if (c.set !== "A" && c.set !== "B") errs.push(c.id + " 的 set 必須是 A 或 B");
+    if (!c.sentence || !c.targetWord) errs.push(c.id + " 缺 sentence 或 targetWord");
+    else if (!c.sentence.toLowerCase().includes(c.targetWord.toLowerCase()))
+      errs.push(c.id + "：targetWord「" + c.targetWord + "」沒有出現在 sentence 裡，字幕無法標黃");
+    if (!c.source || !c.source.timestamp) errs.push(c.id + " 缺 source.timestamp");
+  });
+
+  DATA.quiz.forEach(q => {
+    const card = cardById.get(q.cardId);
+    if (!card) { errs.push(q.id + " 的 cardId「" + q.cardId + "」找不到對應卡片"); return; }
+    if (card.category !== q.category) errs.push(q.id + " 的 category 和 " + q.cardId + " 不一致");
+    if (card.set !== q.set) errs.push(q.id + " 的 set 和 " + q.cardId + " 不一致");
+    if (!Array.isArray(q.options) || q.options.length < 2) errs.push(q.id + " 的 options 至少要兩個");
+    else if (q.answerIndex < 0 || q.answerIndex >= q.options.length) errs.push(q.id + " 的 answerIndex 超出 options 範圍");
+    if (!q.stem || !q.stem.includes("___")) errs.push(q.id + " 的 stem 裡沒有 ___ 空格");
+  });
+
+  if (errs.length) {
+    const box = document.getElementById("errbox");
+    const list = document.getElementById("errlist");
+    errs.forEach(e => { const li = document.createElement("li"); li.textContent = e; list.appendChild(li); });
+    box.hidden = false;
+  }
+  return cardById;
+}
+const CARD_BY_ID = validate();
+
+/* ═══════════════════════════════════════════════════════════
+   狀態
+   ═══════════════════════════════════════════════════════════ */
+const S = {
+  participantId:"", ageGroup:"", set:"A", category:"",
+  cards:[], quiz:[], idx:0, qIdx:0,
+  cardLog:new Map(), quizLog:[],
+  shownAt:0, qStart:0, startedAt:null, learnEndedAt:null, endedAt:null
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const now = () => Date.now();
+const fmtMs = ms => {
+  const s = Math.round(ms/1000);
+  return s < 60 ? s + " 秒" : Math.floor(s/60) + " 分 " + String(s%60).padStart(2,"0") + " 秒";
+};
+
+function show(name){
+  ["setup","learn","quiz","result"].forEach(n => { $("screen-"+n).hidden = (n !== name); });
+  window.scrollTo({top:0});
+}
+function setProgress(p){
+  const t = $("track");
+  t.hidden = p === null;
+  if (p !== null) t.firstElementChild.style.width = Math.max(0, Math.min(100, p)) + "%";
+}
+
+/* ═══════════════════════════════════════════════════════════
+   開始畫面
+   ═══════════════════════════════════════════════════════════ */
+(function initSetup(){
+  const sel = $("cat");
+  sel.innerHTML = '<option value="ALL">全部類別</option>' +
+    DATA.categories.map(c => '<option value="'+c.id+'">'+esc(c.name)+'</option>').join("");
+
+  $("seg-set").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    [...$("seg-set").children].forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    S.set = b.dataset.val;
+    updateCount();
+  });
+  sel.addEventListener("change", updateCount);
+  updateCount();
+
+  $("go").addEventListener("click", start);
+})();
+
+function pickDeck(){
+  const inSet = x => S.set === "ALL" || x.set === S.set;
+  const inCat = x => S.category === "ALL" || x.category === S.category;
+  const cards = DATA.cards.filter(c => inSet(c) && inCat(c));
+  const ids = new Set(cards.map(c => c.id));
+  const quiz = DATA.quiz.filter(q => inSet(q) && inCat(q) && ids.has(q.cardId));
+  return { cards, quiz };
+}
+
+function updateCount(){
+  S.category = $("cat").value || "ALL";
+  const d = pickDeck();
+  $("deckcount").textContent = d.cards.length + " 張卡片、" + d.quiz.length + " 道題";
+  $("go").disabled = d.cards.length === 0;
+}
+
+function start(){
+  const pid = $("pid").value.trim();
+  const age = $("age").value;
+  if (!pid) { $("pid").focus(); $("pid").placeholder = "請先填編號，例如 P01"; return; }
+  if (!age) { $("age").focus(); return; }
+
+  S.participantId = pid;
+  S.ageGroup = age;
+  const d = pickDeck();
+  S.cards = d.cards; S.quiz = d.quiz;
+  S.idx = 0; S.qIdx = 0; S.cardLog = new Map(); S.quizLog = [];
+  S.startedAt = new Date().toISOString();
+
+  const who = $("whoami");
+  who.hidden = false;
+  who.innerHTML = "<b>" + esc(pid) + "</b>　" + esc(age) + "　" + esc(S.set === "ALL" ? "全部詞彙" : S.set + " 組");
+
+  show("learn");
+  renderCard(0, true);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   學習階段
+   ═══════════════════════════════════════════════════════════ */
+function logEntry(card){
+  if (!S.cardLog.has(card.id)) {
+    S.cardLog.set(card.id, { cardId:card.id, targetWord:card.targetWord, dwellMs:0, flipCount:0, firstFlipMs:null });
+  }
+  return S.cardLog.get(card.id);
+}
+function commitDwell(){
+  if (!S.shownAt) return;
+  const card = S.cards[S.idx];
+  if (card) logEntry(card).dwellMs += now() - S.shownAt;
+  S.shownAt = 0;
+}
+
+function highlight(sentence, word){
+  const i = sentence.toLowerCase().indexOf(String(word).toLowerCase());
+  if (i < 0) return esc(sentence);
+  return esc(sentence.slice(0,i)) + "<mark>" + esc(sentence.slice(i, i+word.length)) + "</mark>" + esc(sentence.slice(i+word.length));
+}
+
+function renderCard(i, first){
+  if (!first) commitDwell();
+  S.idx = i;
+  const c = S.cards[i];
+  const cat = DATA.categories.find(x => x.id === c.category);
+
+  $("card").classList.remove("flipped");
+  $("subtitle").innerHTML = highlight(c.sentence, c.targetWord);
+  $("cliplabel").textContent = (cat ? cat.name : c.category) + "　" + c.source.timestamp;
+
+  const still = $("still");
+  const old = still.querySelector("img");
+  if (old) old.remove();
+  if (c.source.screenshot) {
+    const img = document.createElement("img");
+    img.src = c.source.screenshot; img.alt = "";
+    still.appendChild(img);
+    $("stillph").hidden = true;
+  } else {
+    $("stillph").hidden = false;
+  }
+
+  $("b-word").textContent = c.targetWord;
+  $("b-chips").innerHTML =
+    '<span class="chip chip--cefr">' + esc(c.cefr) + '</span>' +
+    '<span class="chip">' + esc(c.pos) + '</span>' +
+    '<span class="chip">' + esc(cat ? cat.name : c.category) + '</span>';
+  $("b-def").textContent = c.definitionEn;
+  $("b-defzh").textContent = c.definitionZh;
+  $("b-ex").textContent = c.example;
+  $("b-src").textContent = c.source.title || "（來源待填）";
+  $("b-stamp").textContent = c.source.timestamp;
+
+  $("deckpos").textContent = "第 " + (i+1) + " 張，共 " + S.cards.length + " 張";
+  $("prev").disabled = i === 0;
+  $("next").disabled = i === S.cards.length - 1;
+  $("toquiz").hidden = !(i === S.cards.length - 1);
+  setProgress((i / S.cards.length) * 50);
+
+  logEntry(c);
+  S.shownAt = now();
+}
+
+function flip(){
+  const card = $("card");
+  const wasFlipped = card.classList.contains("flipped");
+  card.classList.toggle("flipped");
+  if (!wasFlipped) {
+    const e = logEntry(S.cards[S.idx]);
+    e.flipCount += 1;
+    if (e.firstFlipMs === null) e.firstFlipMs = now() - S.shownAt;
+  }
+}
+
+$("card").addEventListener("click", flip);
+$("prev").addEventListener("click", () => { if (S.idx > 0) renderCard(S.idx - 1); });
+$("next").addEventListener("click", () => { if (S.idx < S.cards.length - 1) renderCard(S.idx + 1); });
+$("toquiz").addEventListener("click", () => { commitDwell(); S.learnEndedAt = now(); startQuiz(); });
+
+document.addEventListener("keydown", e => {
+  const onControl = e.target instanceof HTMLElement &&
+                    ["BUTTON","INPUT","SELECT","TEXTAREA"].includes(e.target.tagName);
+  if (!$("screen-learn").hidden) {
+    if (e.code === "Space" && !onControl) { e.preventDefault(); flip(); }
+    if (e.key === "ArrowRight" && S.idx < S.cards.length - 1) renderCard(S.idx + 1);
+    if (e.key === "ArrowLeft" && S.idx > 0) renderCard(S.idx - 1);
+  } else if (!$("screen-quiz").hidden) {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4) {
+      const btn = $("options").children[n-1];
+      if (btn) btn.click();
+    }
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════
+   測驗階段
+   ═══════════════════════════════════════════════════════════ */
+function startQuiz(){
+  if (!S.quiz.length) { finish(); return; }
+  S.qIdx = 0;
+  show("quiz");
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = S.quiz[S.qIdx];
+  $("qcount").textContent = "第 " + (S.qIdx+1) + " 題，共 " + S.quiz.length + " 題";
+  $("stem").innerHTML = esc(q.stem).replace("___", '<span class="blank"></span>');
+
+  const box = $("options");
+  box.innerHTML = "";
+  q.options.forEach((opt, i) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = '<span class="k">' + (i+1) + '</span><span>' + esc(opt) + '</span>';
+    b.addEventListener("click", () => answer(i), { once:true });
+    box.appendChild(b);
+  });
+
+  setProgress(50 + (S.qIdx / S.quiz.length) * 50);
+  S.qStart = now();
+}
+
+function answer(i){
+  const q = S.quiz[S.qIdx];
+  const card = CARD_BY_ID.get(q.cardId);
+  S.quizLog.push({
+    itemId:q.id, cardId:q.cardId,
+    targetWord: card ? card.targetWord : "",
+    chosenIndex:i, chosenText:q.options[i],
+    correct: i === q.answerIndex,
+    responseMs: now() - S.qStart
+  });
+  S.qIdx += 1;
+  if (S.qIdx < S.quiz.length) renderQuestion();
+  else finish();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   分數畫面
+   ═══════════════════════════════════════════════════════════ */
+function buildRecord(){
+  const cardEvents = [...S.cardLog.values()];
+  const correct = S.quizLog.filter(x => x.correct).length;
+  const total = S.quizLog.length;
+  const learnMs = cardEvents.reduce((a,b) => a + b.dwellMs, 0);
+  const quizMs = S.quizLog.reduce((a,b) => a + b.responseMs, 0);
+  return {
+    participantId:S.participantId, ageGroup:S.ageGroup, set:S.set, category:S.category,
+    startedAt:S.startedAt, endedAt:S.endedAt,
+    totalTimeMs: learnMs + quizMs, learnTimeMs: learnMs, quizTimeMs: quizMs,
+    cardEvents, quizEvents:S.quizLog,
+    score:{ correct, total, accuracy: total ? +(correct/total).toFixed(3) : 0 }
+  };
+}
+
+function finish(){
+  S.endedAt = new Date().toISOString();
+  const rec = buildRecord();
+  setProgress(100);
+  show("result");
+
+  $("r-correct").textContent = rec.score.correct;
+  $("r-of").textContent = "／ " + rec.score.total + " 題答對";
+  $("r-acc").textContent = Math.round(rec.score.accuracy * 100) + "%";
+  $("r-learn").textContent = fmtMs(rec.learnTimeMs);
+  $("r-quiz").textContent = fmtMs(rec.quizTimeMs);
+  $("r-avg").textContent = rec.score.total ? fmtMs(rec.quizTimeMs / rec.score.total) : "—";
+
+  const rev = $("review");
+  rev.innerHTML = "";
+  if (!rec.quizEvents.length) {
+    rev.innerHTML = '<div class="empty">這次沒有作答紀錄。回上一步選一個有考題的類別再試一次。</div>';
+  }
+  rec.quizEvents.forEach((ev, n) => {
+    const q = S.quiz.find(x => x.id === ev.itemId);
+    const card = CARD_BY_ID.get(ev.cardId);
+    const cat = card ? DATA.categories.find(c => c.id === card.category) : null;
+    const d = document.createElement("div");
+    d.className = "rev " + (ev.correct ? "ok" : "no");
+    d.innerHTML =
+      '<span class="mark">' + (ev.correct ? "✓" : "✕") + '</span>' +
+      '<p class="qw">' + (n+1) + '.　' + esc(card ? card.targetWord : ev.cardId) + '</p>' +
+      '<p class="ans">' + (ev.correct
+          ? "你的答案：" + esc(ev.chosenText)
+          : "你的答案：<s>" + esc(ev.chosenText) + "</s>　正解：<b>" + esc(q ? q.options[q.answerIndex] : "") + "</b>") +
+        '　作答 ' + (ev.responseMs/1000).toFixed(1) + ' 秒</p>' +
+      '<p class="trace">' + esc(cat ? cat.name : "") +
+        '<span class="stamp">' + esc(card ? card.source.timestamp : "") + '</span>' +
+        esc(card ? card.source.title : "") + '</p>' +
+      (card ? '<p class="trace" style="margin-top:4px">原句：' + esc(card.sentence) + '</p>' : "");
+    rev.appendChild(d);
+  });
+
+  $("dump").value = JSON.stringify(rec, null, 2);
+  $("copied").textContent = "";
+}
+
+function toCsv(rec){
+  const head = ["participantId","ageGroup","set","category","itemId","cardId","targetWord","chosenText","correct","responseMs","dwellMs","flipCount"];
+  const dwell = new Map(rec.cardEvents.map(c => [c.cardId, c]));
+  const rows = rec.quizEvents.map(ev => {
+    const c = dwell.get(ev.cardId) || {};
+    return [rec.participantId, rec.ageGroup, rec.set, rec.category, ev.itemId, ev.cardId,
+            ev.targetWord, ev.chosenText, ev.correct ? 1 : 0, ev.responseMs, c.dwellMs || 0, c.flipCount || 0];
+  });
+  return [head, ...rows].map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(",")).join("\n");
+}
+
+function download(text, filename, mime){
+  try {
+    const blob = new Blob([text], { type: mime + ";charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $("copied").textContent = "已產生 " + filename;
+  } catch (err) {
+    $("copied").textContent = "這個瀏覽器擋下了下載，請改用下方欄位複製";
+  }
+}
+
+$("dl-json").addEventListener("click", () => {
+  const rec = buildRecord();
+  download(JSON.stringify(rec, null, 2), rec.participantId + "_" + rec.set + "_" + rec.category + ".json", "application/json");
+});
+$("dl-csv").addEventListener("click", () => {
+  const rec = buildRecord();
+  download(toCsv(rec), rec.participantId + "_" + rec.set + "_" + rec.category + ".csv", "text/csv");
+});
+$("copy").addEventListener("click", async () => {
+  const ta = $("dump");
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    $("copied").textContent = "已複製到剪貼簿";
+  } catch (err) {
+    ta.select();
+    $("copied").textContent = "自動複製被擋下，已幫你選取，請按 Ctrl/Cmd + C";
+  }
+});
+$("again").addEventListener("click", () => {
+  $("pid").value = ""; $("age").value = "";
+  $("whoami").hidden = true;
+  setProgress(null);
+  show("setup");
+  updateCount();
+});
+</script>
+</body>
+</html>
