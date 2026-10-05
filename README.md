@@ -8,13 +8,21 @@ We're running a within-subjects experiment on learning vocabulary from short vid
 
 | Path | What it is |
 | --- | --- |
-| [`vocab-study-prototype.html`](vocab-study-prototype.html) | Single-file prototype covering setup → learn → quiz → result. It needs no build step and runs offline. |
+| [`vocab-study-prototype.html`](vocab-study-prototype.html) | Single-file prototype covering setup → learn (embedded Short + flashcard) → quiz → result. It needs no build step. |
 | [`W1_技術方案與頁面流程v2.md`](W1_技術方案與頁面流程v2.md) | Week 1 front-end spec: requirements R1–R8, the tech choice, timing metrics, privacy, and page flow |
 | [`docs/Specialization-Team-Project-Proposal.pdf`](docs/Specialization-Team-Project-Proposal.pdf) | Team proposal. **This is the source of truth for the study content** (clips, target words, definitions, examples). |
 
 ## Running the prototype
 
-Open `vocab-study-prototype.html` in any recent browser (Chrome, Edge or Safari). It needs no install and no server. Session data stays in memory, so **download the JSON/CSV before closing the tab**.
+The learning screen embeds the YouTube Shorts, and YouTube only allows embedding from a page served over `http(s)://`. Double-clicking the file still works, but the videos won't play. To see the videos, serve the folder locally:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then open <http://localhost:8000/vocab-study-prototype.html> in Chrome, Edge or Safari. Once the repo is on GitHub Pages, the Pages URL works the same way.
+
+Session data stays in memory, so **download the JSON/CSV before closing the tab**.
 
 ## Study content (from the proposal PDF)
 
@@ -51,6 +59,17 @@ For each word, we also give the part of speech, an English definition, a Chinese
 ## Process log
 
 Newest entries go at the top.
+
+### 2026-10-05 — Embedded Shorts + vertical-video layout
+- Checked all 9 Shorts: every one allows embedding and plays in YouTube's official player. Lengths are 19–60 s.
+- All 9 come from English-learning channels, with **bilingual subtitles burned into the video**. This may confound the comparison with Duolingo. Raise it with Jay and the professor.
+- Redesigned the learning screen around the 9:16 Short. On desktop, the player sits on the left and the flip card on the right, at the same height. On phones, the player is stacked above the card.
+- Embedding uses the YouTube IFrame Player API (`youtube-nocookie.com`). It's one player reused for every card, and it loads each card's clip without autoplaying.
+- New per-card fields:
+  - `source.start` / `source.end` (seconds) play only the moment around the target word. They're `null` for now, so the whole Short plays.
+  - `source.timestamp` was replaced by these.
+  - `source.screenshot` is now only a fallback for when the video can't play (offline, or opened as a local file).
+- New logged metrics per card: `playCount` (times the participant pressed play) and `playMs` (time actually spent playing). Both appear in the JSON and as two new CSV columns.
 
 ### 2026-10-05 — Real content loaded into the prototype
 - Replaced the 16 placeholder cards with the **43 words from the proposal PDF**. The 3 categories are now `standup`, `tvseries` and `lyrics`, and each card records its clip (1–3) and YouTube link.
