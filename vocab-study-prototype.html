@@ -114,6 +114,8 @@
   .def-zh{font-size:15px;color:var(--ink2);margin:0 0 20px}
   .example{border-left:2px solid var(--caption);padding:2px 0 2px 14px;margin:0 0 22px}
   .example p{margin:0;font-family:var(--serif);font-size:16px;color:var(--ink2);font-style:italic}
+  .example p mark{background:none;color:var(--ink);font-weight:600}
+  .example p.ex-zh{font-family:var(--sans);font-style:normal;font-size:14px;color:var(--muted);margin-top:4px}
   .srcline{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .stamp{background:#F0F2EE;border:1px solid var(--line);padding:2px 7px;border-radius:2px;color:var(--ink2)}
 
@@ -165,6 +167,9 @@
   .errbox{background:#FBEFEE;border:1px solid #E3C3BF;border-radius:4px;padding:16px 18px;margin-bottom:24px}
   .errbox h3{margin:0 0 8px;font-size:14px;color:var(--no)}
   .errbox ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
+  .todobox{background:#FBF5E6;border:1px solid #E9D9AE;border-radius:4px;padding:14px 18px;margin-bottom:24px}
+  .todobox h3{margin:0 0 6px;font-size:13.5px;color:var(--ink2)}
+  .todobox ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
 
   .empty{background:var(--surface);border:1px dashed var(--line);border-radius:4px;padding:28px;text-align:center;color:var(--ink2);font-size:14.5px}
 
@@ -197,6 +202,11 @@
 
   <!-- ══════════ 開始畫面 ══════════ -->
   <section id="screen-setup">
+    <div id="todobox" class="todobox" hidden>
+      <h3>教材還沒補齊（不影響試跑）</h3>
+      <ul id="todolist"></ul>
+    </div>
+
     <h2 class="screen-title">開始前先填三件事</h2>
     <p class="lede">這三個欄位會寫進實驗紀錄，用來對應前後測資料。填完就可以開始，不需要帳號。</p>
 
@@ -245,7 +255,7 @@
         <div class="face face--front">
           <div class="still" id="still">
             <div class="cliplabel" id="cliplabel"></div>
-            <div class="ph" id="stillph"><b>截圖佔位</b>等 Jessica 的候選教材清單進來替換</div>
+            <div class="ph" id="stillph"><b>截圖待補</b>source.screenshot 填入後會顯示在這裡</div>
           </div>
           <div class="captionbar">
             <p class="subtitle" id="subtitle"></p>
@@ -258,7 +268,7 @@
             <div class="chips" id="b-chips"></div>
             <p class="def" id="b-def"></p>
             <p class="def-zh" id="b-defzh"></p>
-            <div class="example"><p id="b-ex"></p></div>
+            <div class="example"><p id="b-ex"></p><p class="ex-zh" id="b-exzh"></p></div>
             <div class="srcline">
               <span id="b-src"></span>
               <span class="stamp" id="b-stamp"></span>
@@ -328,190 +338,259 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   DATA — Jessica 的教材與 Jay 的考題都換這一段就好
-   欄位規格見 Melody_W1-3_技術規格.md 第 3 節
-   目前全部是佔位資料（自撰例句，非影片原文）
+   DATA — 教材與考題都換這一段就好
+   內容來源：docs/Specialization-Team-Project-Proposal.pdf（43 個目標詞）
+
+   卡片欄位
+     targetWord / pos / cefr / definitionEn / definitionZh   ← PDF
+     example / exampleZh                                     ← PDF 例句
+     exampleForm   例句裡實際出現的字形（和 targetWord 不同時才填，例如 led、makes sense）
+     sentence      影片字幕原句（待填）；空白時卡片正面暫時顯示 example
+     sentenceForm  字幕原句裡實際出現的字形（同上，和 targetWord 不同時才填）
+     source        影片連結；timestamp 與 screenshot 待填
+     set           A/B 分組（暫定：每個類別內依序交錯，待團隊確認）
    ═══════════════════════════════════════════════════════════ */
 const DATA = {
   categories: [
-    { id: "sitcom",   name: "美劇日常對話" },
-    { id: "shorts",   name: "YT shorts 幽默短片" },
-    { id: "standup",  name: "脫口秀時事評論" },
-    { id: "talkshow", name: "Talk show 訪談" }
+    { id: "standup",  name: "Standup 脫口秀" },
+    { id: "tvseries", name: "American TV series 美劇" },
+    { id: "lyrics",   name: "Lyrics 歌詞" }
   ],
 
   cards: [
-    { id:"c-sitcom-01", category:"sitcom", set:"A", targetWord:"catch up", pos:"phrasal verb", cefr:"B1",
-      sentence:"We should catch up sometime, it's been forever.",
-      definitionEn:"to meet someone you have not seen for a while and talk",
-      definitionZh:"久沒見面後碰個面、聊聊近況",
-      example:"Let's catch up over coffee next week.",
-      source:{ title:"（待填）影集名稱 S01E03", url:"", timestamp:"00:04:12", screenshot:"" } },
+    /* ───────── Standup ───────── */
+    { id:"c-standup-01", category:"standup", clip:1, set:"A", targetWord:"elaborate", pos:"verb", cefr:"C1",
+      definitionEn:"To explain something in more detail.", definitionZh:"詳細說明；進一步闡述",
+      example:"Could you elaborate on that a little more?", exampleZh:"你可以再多詳細說明一點嗎？",
+      sentence:"", source:{ title:"Standup · Shorts 1", url:"https://www.youtube.com/shorts/tqvV1XzrWE0", timestamp:"", screenshot:"" } },
 
-    { id:"c-sitcom-02", category:"sitcom", set:"A", targetWord:"awkward", pos:"adjective", cefr:"B1",
-      sentence:"That was the most awkward dinner of my entire life.",
-      definitionEn:"making you feel embarrassed or uncomfortable",
-      definitionZh:"尷尬的、讓人渾身不對勁的",
-      example:"There was an awkward pause before anyone answered.",
-      source:{ title:"（待填）影集名稱 S02E07", url:"", timestamp:"00:11:48", screenshot:"" } },
+    { id:"c-standup-02", category:"standup", clip:1, set:"B", targetWord:"imaginary", pos:"adjective", cefr:"C1",
+      definitionEn:"Existing only in your mind and not real.", definitionZh:"想像出來的；虛構的",
+      example:"As a child, she had an imaginary friend named Max.", exampleZh:"小時候，她有一個叫 Max 的假想朋友。",
+      sentence:"", source:{ title:"Standup · Shorts 1", url:"https://www.youtube.com/shorts/tqvV1XzrWE0", timestamp:"", screenshot:"" } },
 
-    { id:"c-sitcom-03", category:"sitcom", set:"B", targetWord:"crash", pos:"verb", cefr:"B2",
-      sentence:"Do you mind if I crash on your couch tonight?",
-      definitionEn:"to sleep at someone's place, usually for one night and without planning",
-      definitionZh:"（臨時）借住一晚、隨便找地方睡",
-      example:"He crashed at my place after the concert.",
-      source:{ title:"（待填）影集名稱 S01E09", url:"", timestamp:"00:07:33", screenshot:"" } },
+    { id:"c-standup-03", category:"standup", clip:1, set:"A", targetWord:"architecture", pos:"noun", cefr:"B1",
+      definitionEn:"The design and style of buildings.", definitionZh:"建築；建築設計",
+      example:"I love the old architecture in this city.", exampleZh:"我喜歡這座城市裡的老建築。",
+      sentence:"", source:{ title:"Standup · Shorts 1", url:"https://www.youtube.com/shorts/tqvV1XzrWE0", timestamp:"", screenshot:"" } },
 
-    { id:"c-sitcom-04", category:"sitcom", set:"B", targetWord:"bring up", pos:"phrasal verb", cefr:"B1",
-      sentence:"Please don't bring up the wedding in front of her.",
-      definitionEn:"to start talking about a particular subject",
-      definitionZh:"（在談話中）提起某個話題",
-      example:"Nobody wanted to bring up the budget again.",
-      source:{ title:"（待填）影集名稱 S03E02", url:"", timestamp:"00:16:05", screenshot:"" } },
+    { id:"c-standup-04", category:"standup", clip:2, set:"B", targetWord:"prison", pos:"noun", cefr:"B1",
+      definitionEn:"A place where people are kept as punishment for a crime.", definitionZh:"監獄",
+      example:"He went to prison for two years.", exampleZh:"他坐了兩年牢。",
+      sentence:"", source:{ title:"Standup · Shorts 2", url:"https://youtube.com/shorts/COu4VGQ_ECI", timestamp:"", screenshot:"" } },
 
-    { id:"c-shorts-01", category:"shorts", set:"A", targetWord:"nailed it", pos:"idiom", cefr:"B2",
-      sentence:"She practiced once and completely nailed it.",
-      definitionEn:"did something perfectly, on the first or only try",
-      definitionZh:"一次就做得完美、一擊命中",
-      example:"The landing was tricky but he nailed it.",
-      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:21", screenshot:"" } },
+    { id:"c-standup-05", category:"standup", clip:2, set:"A", targetWord:"import", pos:"verb", cefr:"B2",
+      definitionEn:"To bring goods into a country from another country to sell them.", definitionZh:"進口",
+      example:"This shop imports coffee from Brazil.", exampleForm:"imports", exampleZh:"這家店從巴西進口咖啡。",
+      sentence:"", source:{ title:"Standup · Shorts 2", url:"https://youtube.com/shorts/COu4VGQ_ECI", timestamp:"", screenshot:"" } },
 
-    { id:"c-shorts-02", category:"shorts", set:"A", targetWord:"sketchy", pos:"adjective", cefr:"B2",
-      sentence:"That shortcut looks a little sketchy to me.",
-      definitionEn:"seeming unsafe, unreliable or not quite trustworthy",
-      definitionZh:"看起來不太可靠、有點可疑或危險",
-      example:"The website looked sketchy, so I closed it.",
-      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:34", screenshot:"" } },
+    { id:"c-standup-06", category:"standup", clip:2, set:"B", targetWord:"inconvenient", pos:"adjective", cefr:"B2",
+      definitionEn:"Causing problems or making something more difficult for you.", definitionZh:"不方便的；造成不便的",
+      example:"It is inconvenient to live so far from the station.", exampleZh:"住得離車站這麼遠很不方便。",
+      sentence:"", source:{ title:"Standup · Shorts 2", url:"https://youtube.com/shorts/COu4VGQ_ECI", timestamp:"", screenshot:"" } },
 
-    { id:"c-shorts-03", category:"shorts", set:"B", targetWord:"hyped", pos:"adjective", cefr:"B2",
-      sentence:"Everyone is way too hyped about a sandwich.",
-      definitionEn:"very excited about something, often more than it deserves",
-      definitionZh:"過度興奮、被炒得很熱",
-      example:"Fans were hyped for weeks before the release.",
-      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:12", screenshot:"" } },
+    { id:"c-standup-07", category:"standup", clip:3, set:"A", targetWord:"married", pos:"adjective", cefr:"B2",
+      definitionEn:"Having a husband or wife.", definitionZh:"已婚的",
+      example:"They have been married for ten years.", exampleZh:"他們結婚十年了。",
+      sentence:"", source:{ title:"Standup · Shorts 3", url:"https://youtube.com/shorts/EN9wmq_kkos", timestamp:"", screenshot:"" } },
 
-    { id:"c-shorts-04", category:"shorts", set:"B", targetWord:"pulled off", pos:"phrasal verb", cefr:"B2",
-      sentence:"I can't believe he pulled off that jump.",
-      definitionEn:"to succeed at something difficult",
-      definitionZh:"成功做成一件很難的事",
-      example:"They pulled off the whole show with two days of practice.",
-      source:{ title:"（待填）YT Shorts 標題", url:"", timestamp:"00:00:45", screenshot:"" } },
+    { id:"c-standup-08", category:"standup", clip:3, set:"B", targetWord:"make sense", pos:"verb phrase", cefr:"B2",
+      definitionEn:"To be easy to understand or to seem reasonable.", definitionZh:"合理；說得通",
+      example:"Your plan makes sense to me.", exampleForm:"makes sense", exampleZh:"你的計畫對我來說很合理。",
+      sentence:"", source:{ title:"Standup · Shorts 3", url:"https://youtube.com/shorts/EN9wmq_kkos", timestamp:"", screenshot:"" } },
 
-    { id:"c-standup-01", category:"standup", set:"A", targetWord:"call out", pos:"phrasal verb", cefr:"B2",
-      sentence:"Somebody has to call out that kind of nonsense.",
-      definitionEn:"to publicly criticise someone for what they did or said",
-      definitionZh:"公開指出並批評某人的問題",
-      example:"She called out the company for ignoring the report.",
-      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:03:58", screenshot:"" } },
+    { id:"c-standup-09", category:"standup", clip:3, set:"A", targetWord:"divorce", pos:"verb", cefr:"B2",
+      definitionEn:"To legally end a marriage.", definitionZh:"離婚",
+      example:"They divorced after five years of marriage.", exampleForm:"divorced", exampleZh:"他們結婚五年後就離婚了。",
+      sentence:"", source:{ title:"Standup · Shorts 3", url:"https://youtube.com/shorts/EN9wmq_kkos", timestamp:"", screenshot:"" } },
 
-    { id:"c-standup-02", category:"standup", set:"A", targetWord:"take", pos:"noun", cefr:"C1",
-      sentence:"Here's my take on the whole situation.",
-      definitionEn:"your personal opinion or way of understanding something",
-      definitionZh:"個人看法、對某事的解讀",
-      example:"What's your take on the new policy?",
-      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:01:27", screenshot:"" } },
+    { id:"c-standup-10", category:"standup", clip:3, set:"B", targetWord:"yield", pos:"verb", cefr:"C1",
+      definitionEn:"To let other people or vehicles go first.", definitionZh:"讓路；禮讓",
+      example:"Please yield to the cars coming from the right.", exampleZh:"請禮讓右側來車先行。",
+      sentence:"", source:{ title:"Standup · Shorts 3", url:"https://youtube.com/shorts/EN9wmq_kkos", timestamp:"", screenshot:"" } },
 
-    { id:"c-standup-03", category:"standup", set:"B", targetWord:"roasted", pos:"verb", cefr:"C1",
-      sentence:"He roasted the mayor for ten straight minutes.",
-      definitionEn:"made fun of someone harshly, usually to make people laugh",
-      definitionZh:"（帶著玩笑地）狠狠吐槽、消遣某人",
-      example:"The host roasted every guest at the table.",
-      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:06:40", screenshot:"" } },
+    { id:"c-standup-11", category:"standup", clip:3, set:"A", targetWord:"caution", pos:"noun", cefr:"C1",
+      definitionEn:"Great care that you take to avoid danger or mistakes.", definitionZh:"謹慎；小心",
+      example:"Please cross the road with caution.", exampleZh:"過馬路時請小心。",
+      sentence:"", source:{ title:"Standup · Shorts 3", url:"https://youtube.com/shorts/EN9wmq_kkos", timestamp:"", screenshot:"" } },
 
-    { id:"c-standup-04", category:"standup", set:"B", targetWord:"doubled down", pos:"idiom", cefr:"C1",
-      sentence:"Instead of apologizing, they doubled down.",
-      definitionEn:"became even more committed to a position after being criticised",
-      definitionZh:"被質疑後不但不退，反而更強硬地堅持",
-      example:"He doubled down on the claim even after the data came out.",
-      source:{ title:"（待填）脫口秀段落標題", url:"", timestamp:"00:09:14", screenshot:"" } },
+    { id:"c-standup-12", category:"standup", clip:3, set:"B", targetWord:"check out", pos:"phrasal verb", cefr:"C1",
+      definitionEn:"To look at something to see if it is interesting or good.", definitionZh:"看看；去瞧瞧",
+      example:"You should check out this new restaurant.", exampleZh:"你應該去看看這家新餐廳。",
+      sentence:"", source:{ title:"Standup · Shorts 3", url:"https://youtube.com/shorts/EN9wmq_kkos", timestamp:"", screenshot:"" } },
 
-    { id:"c-talkshow-01", category:"talkshow", set:"A", targetWord:"turning point", pos:"noun", cefr:"B2",
-      sentence:"That audition was the turning point of my career.",
-      definitionEn:"the moment when an important change starts",
-      definitionZh:"轉捩點、情況開始改變的時刻",
-      example:"Losing that job turned out to be a turning point.",
-      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:12:50", screenshot:"" } },
+    /* ───────── American TV series ───────── */
+    { id:"c-tvseries-01", category:"tvseries", clip:1, set:"A", targetWord:"embarrassing", pos:"adjective", cefr:"B1",
+      definitionEn:"Making you feel shy, awkward, or ashamed.", definitionZh:"令人尷尬的",
+      example:"It was so embarrassing when I forgot her name.", exampleZh:"我忘了她的名字，真的好尷尬。",
+      sentence:"", source:{ title:"American TV series · Shorts 1", url:"https://youtube.com/shorts/hGZLnvEf4oA", timestamp:"", screenshot:"" } },
 
-    { id:"c-talkshow-02", category:"talkshow", set:"A", targetWord:"look back on", pos:"phrasal verb", cefr:"B2",
-      sentence:"When I look back on that year, I mostly laugh.",
-      definitionEn:"to think about something that happened in the past",
-      definitionZh:"回頭看、回顧過去的某段經歷",
-      example:"She looks back on her first film with mixed feelings.",
-      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:18:22", screenshot:"" } },
+    { id:"c-tvseries-02", category:"tvseries", clip:1, set:"B", targetWord:"waiter", pos:"noun", cefr:"A1",
+      definitionEn:"A man whose job is to bring food and drinks to people in a restaurant.", definitionZh:"男服務生",
+      example:"The waiter brought us two glasses of water.", exampleZh:"服務生給我們端來兩杯水。",
+      sentence:"", source:{ title:"American TV series · Shorts 1", url:"https://youtube.com/shorts/hGZLnvEf4oA", timestamp:"", screenshot:"" } },
 
-    { id:"c-talkshow-03", category:"talkshow", set:"B", targetWord:"pitched", pos:"verb", cefr:"B2",
-      sentence:"I pitched the idea to three studios before anyone listened.",
-      definitionEn:"presented an idea to someone, hoping they will support it",
-      definitionZh:"向人提案、推銷一個想法",
-      example:"They pitched the project to investors last spring.",
-      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:05:16", screenshot:"" } },
+    { id:"c-tvseries-03", category:"tvseries", clip:1, set:"A", targetWord:"be supposed to be sth", pos:"phrase", cefr:"B2",
+      definitionEn:"To be said or believed to be something.", definitionZh:"應該是…；據說是…",
+      example:"This place is supposed to be the best café in town.", exampleForm:"is supposed to be", exampleZh:"這家據說是鎮上最好的咖啡店。",
+      sentence:"", source:{ title:"American TV series · Shorts 1", url:"https://youtube.com/shorts/hGZLnvEf4oA", timestamp:"", screenshot:"" } },
 
-    { id:"c-talkshow-04", category:"talkshow", set:"B", targetWord:"stuck with", pos:"phrasal verb", cefr:"B1",
-      sentence:"I stuck with it because nothing else felt right.",
-      definitionEn:"continued doing something difficult instead of giving up",
-      definitionZh:"堅持下去、沒有中途放棄",
-      example:"He stuck with the same teacher for six years.",
-      source:{ title:"（待填）訪談節目集數", url:"", timestamp:"00:21:04", screenshot:"" } }
+    { id:"c-tvseries-04", category:"tvseries", clip:1, set:"B", targetWord:"weird", pos:"adjective", cefr:"B2",
+      definitionEn:"Strange or unusual in a way that is hard to understand.", definitionZh:"奇怪的；古怪的",
+      example:"I heard a weird noise in the kitchen.", exampleZh:"我在廚房裡聽到一個怪聲音。",
+      sentence:"", source:{ title:"American TV series · Shorts 1", url:"https://youtube.com/shorts/hGZLnvEf4oA", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-05", category:"tvseries", clip:2, set:"A", targetWord:"pass on sth / pass sth on", pos:"phrasal verb", cefr:"B1",
+      definitionEn:"To give something, or tell something, to another person.", definitionZh:"轉交；轉達",
+      example:"Please pass on my thanks to your mother.", exampleForm:"pass on", exampleZh:"請代我向你媽媽道謝。",
+      sentence:"", source:{ title:"American TV series · Shorts 2", url:"https://youtube.com/shorts/d0-1GfKNVVU", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-06", category:"tvseries", clip:2, set:"B", targetWord:"wisdom", pos:"noun", cefr:"B2",
+      definitionEn:"The ability to make good decisions based on knowledge and experience.", definitionZh:"智慧",
+      example:"My grandfather is a man of great wisdom.", exampleZh:"我爺爺是個很有智慧的人。",
+      sentence:"", source:{ title:"American TV series · Shorts 2", url:"https://youtube.com/shorts/d0-1GfKNVVU", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-07", category:"tvseries", clip:2, set:"A", targetWord:"couple", pos:"noun", cefr:"B1",
+      definitionEn:"Two people who are married or in a romantic relationship.", definitionZh:"夫妻；情侶",
+      example:"The couple next door just had a baby.", exampleZh:"隔壁那對夫妻剛生了寶寶。",
+      sentence:"", source:{ title:"American TV series · Shorts 2", url:"https://youtube.com/shorts/d0-1GfKNVVU", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-08", category:"tvseries", clip:2, set:"B", targetWord:"smile", pos:"verb", cefr:"B1",
+      definitionEn:"To turn up the corners of your mouth to show you are happy.", definitionZh:"微笑",
+      example:"She smiled when she saw her friends.", exampleForm:"smiled", exampleZh:"她看到朋友時笑了。",
+      sentence:"", source:{ title:"American TV series · Shorts 2", url:"https://youtube.com/shorts/d0-1GfKNVVU", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-09", category:"tvseries", clip:2, set:"A", targetWord:"rude", pos:"adjective", cefr:"B1",
+      definitionEn:"Not polite and likely to upset other people.", definitionZh:"沒禮貌的；粗魯的",
+      example:"It is rude to talk with your mouth full.", exampleZh:"嘴裡有食物時說話很沒禮貌。",
+      sentence:"", source:{ title:"American TV series · Shorts 2", url:"https://youtube.com/shorts/d0-1GfKNVVU", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-10", category:"tvseries", clip:2, set:"B", targetWord:"sneeze", pos:"verb", cefr:"B2",
+      definitionEn:"To suddenly push air out through your nose and mouth when you cannot stop yourself.", definitionZh:"打噴嚏",
+      example:"Dust makes me sneeze.", exampleZh:"灰塵會讓我打噴嚏。",
+      sentence:"", source:{ title:"American TV series · Shorts 2", url:"https://youtube.com/shorts/d0-1GfKNVVU", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-11", category:"tvseries", clip:2, set:"A", targetWord:"terrific", pos:"adjective", cefr:"B1",
+      definitionEn:"Very good or excellent.", definitionZh:"極好的；很棒的",
+      example:"You did a terrific job on the project.", exampleZh:"你在這個專案上表現得太棒了。",
+      sentence:"", source:{ title:"American TV series · Shorts 2", url:"https://youtube.com/shorts/d0-1GfKNVVU", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-12", category:"tvseries", clip:3, set:"B", targetWord:"fantastic", pos:"adjective", cefr:"A2",
+      definitionEn:"Extremely good or wonderful.", definitionZh:"太棒的；極好的",
+      example:"We had a fantastic time at the beach.", exampleZh:"我們在海邊玩得非常開心。",
+      sentence:"", source:{ title:"American TV series · Shorts 3", url:"https://youtube.com/shorts/J9cz9ajKEvY", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-13", category:"tvseries", clip:3, set:"A", targetWord:"lean", pos:"verb", cefr:"C2",
+      definitionEn:"To bend your body in one direction, or to rest against something.", definitionZh:"傾斜；倚靠",
+      example:"She leaned forward to hear him better.", exampleForm:"leaned", exampleZh:"她身體前傾，想聽得更清楚。",
+      sentence:"", source:{ title:"American TV series · Shorts 3", url:"https://youtube.com/shorts/J9cz9ajKEvY", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-14", category:"tvseries", clip:3, set:"B", targetWord:"be close to sth", pos:"phrase", cefr:"C1",
+      definitionEn:"To be near something.", definitionZh:"靠近；接近",
+      example:"Our hotel is close to the beach.", exampleForm:"is close to", exampleZh:"我們的飯店離海灘很近。",
+      sentence:"", source:{ title:"American TV series · Shorts 3", url:"https://youtube.com/shorts/J9cz9ajKEvY", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-15", category:"tvseries", clip:3, set:"A", targetWord:"distance", pos:"noun", cefr:"B1",
+      definitionEn:"The amount of space between two places or things.", definitionZh:"距離",
+      example:"The distance from my home to the school is about two kilometers.", exampleZh:"我家到學校的距離大約兩公里。",
+      sentence:"", source:{ title:"American TV series · Shorts 3", url:"https://youtube.com/shorts/J9cz9ajKEvY", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-16", category:"tvseries", clip:3, set:"B", targetWord:"pretend", pos:"verb", cefr:"B2",
+      definitionEn:"To act as if something is true when it is not.", definitionZh:"假裝",
+      example:"The little boy pretended to be asleep.", exampleForm:"pretended", exampleZh:"小男孩假裝睡著了。",
+      sentence:"", source:{ title:"American TV series · Shorts 3", url:"https://youtube.com/shorts/J9cz9ajKEvY", timestamp:"", screenshot:"" } },
+
+    { id:"c-tvseries-17", category:"tvseries", clip:3, set:"A", targetWord:"rough", pos:"adjective", cefr:"B1",
+      definitionEn:"Not smooth; having an uneven surface.", definitionZh:"粗糙的",
+      example:"The wall felt rough under my hand.", exampleZh:"手摸起來，牆面很粗糙。",
+      sentence:"", source:{ title:"American TV series · Shorts 3", url:"https://youtube.com/shorts/J9cz9ajKEvY", timestamp:"", screenshot:"" } },
+
+    /* ───────── Lyrics ───────── */
+    { id:"c-lyrics-01", category:"lyrics", clip:1, set:"A", targetWord:"wisdom", pos:"noun", cefr:"B2",
+      definitionEn:"The ability to make good decisions based on knowledge and experience.", definitionZh:"智慧",
+      example:"Her words of wisdom helped me through hard times.", exampleZh:"她充滿智慧的話語幫助我度過難關。",
+      sentence:"", source:{ title:"Lyrics · Shorts 1", url:"https://youtube.com/shorts/IotJ26My0mg", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-02", category:"lyrics", clip:1, set:"B", targetWord:"darkness", pos:"noun", cefr:"B2",
+      definitionEn:"The state of having little or no light.", definitionZh:"黑暗",
+      example:"The whole room was in darkness when the power went out.", exampleZh:"停電時，整個房間一片漆黑。",
+      sentence:"", source:{ title:"Lyrics · Shorts 1", url:"https://youtube.com/shorts/IotJ26My0mg", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-03", category:"lyrics", clip:1, set:"A", targetWord:"whisper", pos:"verb", cefr:"B2",
+      definitionEn:"To speak very quietly so that only people close to you can hear.", definitionZh:"低聲說；耳語",
+      example:"She whispered a secret in my ear.", exampleForm:"whispered", exampleZh:"她在我耳邊悄悄說了一個祕密。",
+      sentence:"", source:{ title:"Lyrics · Shorts 1", url:"https://youtube.com/shorts/IotJ26My0mg", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-04", category:"lyrics", clip:2, set:"B", targetWord:"turn", pos:"verb", cefr:"B1",
+      definitionEn:"To move your body or something else so that it faces a different direction.", definitionZh:"轉向；轉彎",
+      example:"Turn left at the next street.", exampleZh:"在下一個路口左轉。",
+      sentence:"", source:{ title:"Lyrics · Shorts 2", url:"https://youtube.com/shorts/R9q4bQvCUA0", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-05", category:"lyrics", clip:2, set:"A", targetWord:"meet", pos:"verb", cefr:"B1",
+      definitionEn:"To come together with someone, or to see someone for the first time.", definitionZh:"遇見；碰面",
+      example:"I will meet you at the station at six.", exampleZh:"我六點在車站跟你碰面。",
+      sentence:"", source:{ title:"Lyrics · Shorts 2", url:"https://youtube.com/shorts/R9q4bQvCUA0", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-06", category:"lyrics", clip:2, set:"B", targetWord:"lead", pos:"verb", cefr:"B1",
+      definitionEn:"To go in front of others and show them the way.", definitionZh:"帶領；引導",
+      example:"The guide led us through the forest.", exampleForm:"led", exampleZh:"嚮導帶我們穿過森林。",
+      sentence:"", source:{ title:"Lyrics · Shorts 2", url:"https://youtube.com/shorts/R9q4bQvCUA0", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-07", category:"lyrics", clip:2, set:"A", targetWord:"trail", pos:"noun", cefr:"B2",
+      definitionEn:"A path through the countryside, for example in a forest or on a mountain.", definitionZh:"小徑；步道",
+      example:"We followed the trail up the mountain.", exampleZh:"我們沿著步道爬上山。",
+      sentence:"", source:{ title:"Lyrics · Shorts 2", url:"https://youtube.com/shorts/R9q4bQvCUA0", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-08", category:"lyrics", clip:2, set:"B", targetWord:"sail", pos:"verb", cefr:"B1",
+      definitionEn:"To travel on water in a boat or ship.", definitionZh:"航行；乘船",
+      example:"They sailed across the lake in a small boat.", exampleForm:"sailed", exampleZh:"他們乘小船橫渡了湖面。",
+      sentence:"", source:{ title:"Lyrics · Shorts 2", url:"https://youtube.com/shorts/R9q4bQvCUA0", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-09", category:"lyrics", clip:2, set:"A", targetWord:"far", pos:"adverb", cefr:"A2",
+      definitionEn:"A long distance away.", definitionZh:"遠的；遠",
+      example:"Is the airport far from here?", exampleZh:"機場離這裡遠嗎？",
+      sentence:"", source:{ title:"Lyrics · Shorts 2", url:"https://youtube.com/shorts/R9q4bQvCUA0", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-10", category:"lyrics", clip:3, set:"B", targetWord:"shadow", pos:"noun", cefr:"B1",
+      definitionEn:"A dark shape on a surface that is made when something blocks the light.", definitionZh:"影子",
+      example:"The tree made a long shadow on the grass.", exampleZh:"那棵樹在草地上投下長長的影子。",
+      sentence:"", source:{ title:"Lyrics · Shorts 3", url:"https://youtube.com/shorts/4nfeAC6OiYM", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-11", category:"lyrics", clip:3, set:"A", targetWord:"light", pos:"noun", cefr:"B1",
+      definitionEn:"The brightness from the sun or a lamp that lets you see things.", definitionZh:"光；光線",
+      example:"The morning light came through the window.", exampleZh:"晨光從窗戶照了進來。",
+      sentence:"", source:{ title:"Lyrics · Shorts 3", url:"https://youtube.com/shorts/4nfeAC6OiYM", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-12", category:"lyrics", clip:3, set:"B", targetWord:"fade away", pos:"phrasal verb", cefr:"B2",
+      definitionEn:"To slowly become weaker or less clear until it disappears.", definitionZh:"逐漸消失；漸漸淡去",
+      example:"The sound of the music faded away.", exampleForm:"faded away", exampleZh:"音樂聲漸漸消失了。",
+      sentence:"", source:{ title:"Lyrics · Shorts 3", url:"https://youtube.com/shorts/4nfeAC6OiYM", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-13", category:"lyrics", clip:3, set:"A", targetWord:"afraid", pos:"adjective", cefr:"A2",
+      definitionEn:"Feeling fear because you think something bad may happen.", definitionZh:"害怕的",
+      example:"Many children are afraid of the dark.", exampleZh:"很多小孩怕黑。",
+      sentence:"", source:{ title:"Lyrics · Shorts 3", url:"https://youtube.com/shorts/4nfeAC6OiYM", timestamp:"", screenshot:"" } },
+
+    { id:"c-lyrics-14", category:"lyrics", clip:3, set:"B", targetWord:"alive", pos:"adjective", cefr:"C2",
+      definitionEn:"Living, not dead.", definitionZh:"活著的",
+      example:"I'm so glad that you are still alive.", exampleZh:"你還活著，我真是太高興了。",
+      sentence:"", source:{ title:"Lyrics · Shorts 3", url:"https://youtube.com/shorts/4nfeAC6OiYM", timestamp:"", screenshot:"" } }
   ],
 
-  quiz: [
-    { id:"q-sitcom-01", cardId:"c-sitcom-01", category:"sitcom", set:"A", type:"cloze",
-      stem:"We should ___ sometime, it's been forever.",
-      options:["catch up","take over","run into","look after"], answerIndex:0 },
-    { id:"q-sitcom-02", cardId:"c-sitcom-02", category:"sitcom", set:"A", type:"cloze",
-      stem:"That was the most ___ dinner of my entire life.",
-      options:["generous","awkward","formal","urgent"], answerIndex:1 },
-    { id:"q-sitcom-03", cardId:"c-sitcom-03", category:"sitcom", set:"B", type:"cloze",
-      stem:"Do you mind if I ___ on your couch tonight?",
-      options:["stack","crash","settle","fold"], answerIndex:1 },
-    { id:"q-sitcom-04", cardId:"c-sitcom-04", category:"sitcom", set:"B", type:"cloze",
-      stem:"Please don't ___ the wedding in front of her.",
-      options:["bring up","take up","put off","hold on"], answerIndex:0 },
-
-    { id:"q-shorts-01", cardId:"c-shorts-01", category:"shorts", set:"A", type:"cloze",
-      stem:"She practiced once and completely ___.",
-      options:["missed it","nailed it","lost it","called it"], answerIndex:1 },
-    { id:"q-shorts-02", cardId:"c-shorts-02", category:"shorts", set:"A", type:"cloze",
-      stem:"That shortcut looks a little ___ to me.",
-      options:["sketchy","polished","formal","steady"], answerIndex:0 },
-    { id:"q-shorts-03", cardId:"c-shorts-03", category:"shorts", set:"B", type:"cloze",
-      stem:"Everyone is way too ___ about a sandwich.",
-      options:["hyped","bored","strict","calm"], answerIndex:0 },
-    { id:"q-shorts-04", cardId:"c-shorts-04", category:"shorts", set:"B", type:"cloze",
-      stem:"I can't believe he ___ that jump.",
-      options:["pulled off","put down","gave away","ran over"], answerIndex:0 },
-
-    { id:"q-standup-01", cardId:"c-standup-01", category:"standup", set:"A", type:"cloze",
-      stem:"Somebody has to ___ that kind of nonsense.",
-      options:["call out","hand in","look up","turn down"], answerIndex:0 },
-    { id:"q-standup-02", cardId:"c-standup-02", category:"standup", set:"A", type:"cloze",
-      stem:"Here's my ___ on the whole situation.",
-      options:["take","move","reach","turn"], answerIndex:0 },
-    { id:"q-standup-03", cardId:"c-standup-03", category:"standup", set:"B", type:"cloze",
-      stem:"He ___ the mayor for ten straight minutes.",
-      options:["greeted","roasted","quoted","hired"], answerIndex:1 },
-    { id:"q-standup-04", cardId:"c-standup-04", category:"standup", set:"B", type:"cloze",
-      stem:"Instead of apologizing, they ___.",
-      options:["backed off","doubled down","gave in","moved on"], answerIndex:1 },
-
-    { id:"q-talkshow-01", cardId:"c-talkshow-01", category:"talkshow", set:"A", type:"cloze",
-      stem:"That audition was the ___ of my career.",
-      options:["turning point","side note","last resort","running joke"], answerIndex:0 },
-    { id:"q-talkshow-02", cardId:"c-talkshow-02", category:"talkshow", set:"A", type:"cloze",
-      stem:"When I ___ that year, I mostly laugh.",
-      options:["look back on","look up to","look out for","look into"], answerIndex:0 },
-    { id:"q-talkshow-03", cardId:"c-talkshow-03", category:"talkshow", set:"B", type:"cloze",
-      stem:"I ___ the idea to three studios before anyone listened.",
-      options:["pitched","buried","copied","delayed"], answerIndex:0 },
-    { id:"q-talkshow-04", cardId:"c-talkshow-04", category:"talkshow", set:"B", type:"cloze",
-      stem:"I ___ it because nothing else felt right.",
-      options:["stuck with","gave up","passed on","ruled out"], answerIndex:0 }
-  ]
+  /* 考題待寫（下一步）：每張卡一題克漏字＋四選一
+     格式：{ id:"q-standup-01", cardId:"c-standup-01", category:"standup", set:"A", type:"cloze",
+             stem:"Could you ___ on that a little more?", options:["elaborate","…","…","…"], answerIndex:0 } */
+  quiz: []
 };
 
 /* ═══════════════════════════════════════════════════════════
    資料檢查 — 換教材／換考題後會在畫面上直接報錯
    ═══════════════════════════════════════════════════════════ */
+const exampleForm = c => c.exampleForm || c.targetWord;
+const sentenceForm = c => c.sentenceForm || c.targetWord;
+/* 字幕原句還沒填時，卡片正面先用例句 */
+const frontLine = c => c.sentence ? { text:c.sentence, form:sentenceForm(c) } : { text:c.example, form:exampleForm(c) };
+
 function validate() {
   const errs = [];
   const catIds = new Set(DATA.categories.map(c => c.id));
@@ -522,11 +601,27 @@ function validate() {
     cardById.set(c.id, c);
     if (!catIds.has(c.category)) errs.push(c.id + " 的 category「" + c.category + "」不在 categories 清單裡");
     if (c.set !== "A" && c.set !== "B") errs.push(c.id + " 的 set 必須是 A 或 B");
-    if (!c.sentence || !c.targetWord) errs.push(c.id + " 缺 sentence 或 targetWord");
-    else if (!c.sentence.toLowerCase().includes(c.targetWord.toLowerCase()))
-      errs.push(c.id + "：targetWord「" + c.targetWord + "」沒有出現在 sentence 裡，字幕無法標黃");
-    if (!c.source || !c.source.timestamp) errs.push(c.id + " 缺 source.timestamp");
+    if (!c.targetWord || !c.example || !c.exampleZh) errs.push(c.id + " 缺 targetWord、example 或 exampleZh");
+    else if (!c.example.toLowerCase().includes(exampleForm(c).toLowerCase()))
+      errs.push(c.id + "：「" + exampleForm(c) + "」沒有出現在 example 裡，請填 exampleForm");
+    if (c.sentence && !c.sentence.toLowerCase().includes(sentenceForm(c).toLowerCase()))
+      errs.push(c.id + "：「" + sentenceForm(c) + "」沒有出現在 sentence 裡，字幕無法標黃，請填 sentenceForm");
+    if (!c.source || !c.source.url) errs.push(c.id + " 缺 source.url");
   });
+
+  const noSentence = DATA.cards.filter(c => !c.sentence).length;
+  const noStamp = DATA.cards.filter(c => !c.source || !c.source.timestamp).length;
+  const noShot = DATA.cards.filter(c => !c.source || !c.source.screenshot).length;
+  const todos = [];
+  if (noSentence) todos.push(noSentence + " 張卡片還沒有字幕原句（sentence），正面暫時顯示例句");
+  if (noStamp) todos.push(noStamp + " 張卡片還沒有時間戳（source.timestamp）");
+  if (noShot) todos.push(noShot + " 張卡片還沒有截圖（source.screenshot）");
+  if (!DATA.quiz.length) todos.push("考題（DATA.quiz）還沒放進來，學習完會直接跳到結果頁");
+  if (todos.length) {
+    const list = document.getElementById("todolist");
+    todos.forEach(t => { const li = document.createElement("li"); li.textContent = t; list.appendChild(li); });
+    document.getElementById("todobox").hidden = false;
+  }
 
   DATA.quiz.forEach(q => {
     const card = cardById.get(q.cardId);
@@ -662,8 +757,9 @@ function renderCard(i, first){
   const cat = DATA.categories.find(x => x.id === c.category);
 
   $("card").classList.remove("flipped");
-  $("subtitle").innerHTML = highlight(c.sentence, c.targetWord);
-  $("cliplabel").textContent = (cat ? cat.name : c.category) + "　" + c.source.timestamp;
+  const line = frontLine(c);
+  $("subtitle").innerHTML = highlight(line.text, line.form);
+  $("cliplabel").textContent = c.source.title + "　" + (c.source.timestamp || "時間戳待填");
 
   const still = $("still");
   const old = still.querySelector("img");
@@ -684,9 +780,10 @@ function renderCard(i, first){
     '<span class="chip">' + esc(cat ? cat.name : c.category) + '</span>';
   $("b-def").textContent = c.definitionEn;
   $("b-defzh").textContent = c.definitionZh;
-  $("b-ex").textContent = c.example;
+  $("b-ex").innerHTML = highlight(c.example, exampleForm(c));
+  $("b-exzh").textContent = c.exampleZh;
   $("b-src").textContent = c.source.title || "（來源待填）";
-  $("b-stamp").textContent = c.source.timestamp;
+  $("b-stamp").textContent = c.source.timestamp || "—";
 
   $("deckpos").textContent = "第 " + (i+1) + " 張，共 " + S.cards.length + " 張";
   $("prev").disabled = i === 0;
@@ -808,7 +905,7 @@ function finish(){
   const rev = $("review");
   rev.innerHTML = "";
   if (!rec.quizEvents.length) {
-    rev.innerHTML = '<div class="empty">這次沒有作答紀錄。回上一步選一個有考題的類別再試一次。</div>';
+    rev.innerHTML = '<div class="empty">這次沒有作答紀錄。考題還沒放進 DATA.quiz，學習階段的停留時間仍可下載。</div>';
   }
   rec.quizEvents.forEach((ev, n) => {
     const q = S.quiz.find(x => x.id === ev.itemId);
@@ -824,9 +921,9 @@ function finish(){
           : "你的答案：<s>" + esc(ev.chosenText) + "</s>　正解：<b>" + esc(q ? q.options[q.answerIndex] : "") + "</b>") +
         '　作答 ' + (ev.responseMs/1000).toFixed(1) + ' 秒</p>' +
       '<p class="trace">' + esc(cat ? cat.name : "") +
-        '<span class="stamp">' + esc(card ? card.source.timestamp : "") + '</span>' +
+        '<span class="stamp">' + esc(card ? card.source.timestamp || "—" : "") + '</span>' +
         esc(card ? card.source.title : "") + '</p>' +
-      (card ? '<p class="trace" style="margin-top:4px">原句：' + esc(card.sentence) + '</p>' : "");
+      (card ? '<p class="trace" style="margin-top:4px">' + (card.sentence ? "原句：" : "例句：") + esc(frontLine(card).text) + '</p>' : "");
     rev.appendChild(d);
   });
 

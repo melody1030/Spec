@@ -44,7 +44,7 @@ There are 3 categories × 3 YouTube Shorts, for **43 target words** in total. CE
 | Shorts 2 | [R9q4bQvCUA0](https://youtube.com/shorts/R9q4bQvCUA0) | turn (B1), meet (B1), lead (B1), trail (B2), sail (B1), far (A2) |
 | Shorts 3 | [4nfeAC6OiYM](https://youtube.com/shorts/4nfeAC6OiYM) | shadow (B1), light (B1), fade away (B2), afraid (A2), alive (C2) |
 
-For each word, the PDF also gives the part of speech, an English definition, a Chinese definition (定義), an English example sentence, and a Chinese example sentence (例句). These map onto the `pos`, `definitionEn`, `definitionZh` and `example` fields of each card in the prototype's `DATA` constant.
+For each word, we also give the part of speech, an English definition, a Chinese definition (定義), an English example sentence, and a Chinese example sentence (例句). These map onto the `pos`, `definitionEn`, `definitionZh` and `example` fields of each card in the prototype's `DATA` constant.
 
 > Note: "wisdom" appears in both TV series (Shorts 2) and Lyrics (Shorts 1).
 
@@ -52,16 +52,24 @@ For each word, the PDF also gives the part of speech, an English definition, a C
 
 Newest entries go at the top.
 
+### 2026-10-05 — Real content loaded into the prototype
+- Replaced the 16 placeholder cards with the **43 words from the proposal PDF**. The 3 categories are now `standup`, `tvseries` and `lyrics`, and each card records its clip (1–3) and YouTube link.
+- New card fields:
+  - `exampleZh`: the Chinese example sentence from the PDF.
+  - `exampleForm` / `sentenceForm`: the exact word form that appears in the sentence (e.g. *led*, *makes sense*, *is supposed to be*), so highlighting works for inflected forms.
+- `sentence` (the subtitle line from the clip) is empty for now. Until it's filled, the card front shows the PDF example sentence.
+- The setup screen now lists what's still missing (subtitles, timestamps, screenshots, quiz) as a to-do notice. Real errors still block the page as before.
+- **A/B split is provisional:** words alternate A/B in order within each category (A = 22, B = 21). As a side effect, the two "wisdom" cards end up in different sets (TV = B, Lyrics = A). The team still needs to confirm the split, including CEFR balance.
+- `DATA.quiz` is empty. Writing it is the next step (step 2). Until then, the flow goes learn → result, and only the JSON export contains dwell/flip data, because the CSV has one row per quiz item.
+
 ### 2026-10-05 — Repo created
 - Created this repo and committed the W1 prototype and spec.
 - Added the team proposal PDF under `docs/` as the content source.
 - Feedback noted in the proposal:
   - **4**: default to English, with a switch to Chinese
   - **6**: not needed
-  - (These numbers probably refer to the W1 requirements list. Confirm with the team.)
-- **Next:** replace the placeholder `DATA` in the prototype (it still uses the old `sitcom / shorts / standup / talkshow` sample cards) with the 43 words and 3 categories above. Then add the subtitle sentence, screenshot and timestamp for each clip.
+- **Next:** replace the placeholder `DATA` in the prototype with the 43 words and 3 categories above (done, see the entry above).
 
-### 2026-09-15 — Week 1: tech plan & page flow (Melody)
-- Derived front-end requirements R1–R8 from the experiment design.
+### 2026-09-15 — Week 1: tech plan & page flow 
 - Compared 4 options: single HTML file, React + Vite, Next.js + DB, and a Google Form hybrid. **Chose the single HTML file** because it keeps the learning and quiz timeline in one tab, has no build step, and lets us swap materials by editing one constant.
 - Built `vocab-study-prototype.html` with placeholder data, load-time validation, dwell/flip/response timing, and JSON/CSV export.
