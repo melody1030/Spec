@@ -77,20 +77,22 @@
   .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:26px}
   .spacer{flex:1}
 
-  /* ---------- learn layout：直式短片（9:16）＋ 翻卡並排 ---------- */
+  /* ---------- flashcard：正面＝直式短片（9:16）＋ 字幕句，背面＝定義 ---------- */
   .app.wide{max-width:920px}
-  .learn{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:start}
-  .reel{width:min(304px,calc((100vh - 230px) * 9 / 16));min-width:220px}
-  .frame{position:relative;aspect-ratio:9/16;background:var(--film);border-radius:6px;overflow:hidden;box-shadow:0 1px 0 rgba(22,32,42,.16)}
+  .stage{perspective:1600px}
+  .card{
+    --vw:max(220px,min(304px,calc((100vh - 250px) * 9 / 16)));
+    position:relative;height:calc(var(--vw) * 16 / 9);transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.75,.2,1)
+  }
+  .card.flipped{transform:rotateY(180deg)}
+  /* iframe 在部分瀏覽器（Safari）不吃 backface-visibility，翻到一半時直接藏起來 */
+  .card .face{transition:visibility 0s .25s}
+  .card.flipped .face--front,.card:not(.flipped) .face--back{visibility:hidden}
+  .frame{position:relative;flex:none;width:var(--vw);aspect-ratio:9/16;background:#000}
   .frame #player,.frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .frame .still{position:absolute;inset:0}
-
-  /* ---------- flashcard ---------- */
-  .stage{perspective:1600px}
-  .card{position:relative;height:calc(min(304px,calc((100vh - 230px) * 9 / 16)) * 16 / 9);min-height:391px;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.75,.2,1)}
-  .card.flipped{transform:rotateY(180deg)}
   .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:4px;overflow:hidden;display:flex;flex-direction:column}
-  .face--front{background:var(--film);box-shadow:0 1px 0 rgba(22,32,42,.16)}
+  .face--front{flex-direction:row;background:var(--film);box-shadow:0 1px 0 rgba(22,32,42,.16)}
   .face--back{transform:rotateY(180deg);background:var(--surface);border:1px solid var(--line)}
 
   .still{
@@ -102,14 +104,15 @@
   .still img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .still .ph{color:rgba(255,255,255,.4);font-size:13px;letter-spacing:.04em;text-align:center;padding:0 24px}
   .still .ph b{display:block;color:rgba(255,255,255,.62);font-size:14px;font-weight:600;margin-bottom:4px}
-  .cliplabel{margin:10px 0 0;font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .cliplabel{margin:0 0 auto;font-size:12px;color:rgba(255,255,255,.45);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .captionbar{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 30px;background:var(--film)}
   .captionbar .kicker{margin:0 0 14px;text-align:center;font-size:11.5px;letter-spacing:.12em;color:rgba(255,255,255,.4)}
   .captionbar .subtitle{
     font-family:var(--serif);font-size:23px;line-height:1.55;color:#F2F4F5;margin:0;text-align:center
   }
+  .captionbar .stamp{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.6)}
   .captionbar mark{background:none;color:var(--caption);font-weight:700;box-shadow:inset 0 -2px 0 rgba(232,179,60,.45)}
-  .captionbar .cue{margin:14px 0 0;text-align:center;font-size:12.5px;color:rgba(255,255,255,.45)}
+  .captionbar .cue{margin:auto 0 0;padding-top:14px;text-align:center;font-size:12.5px;color:rgba(255,255,255,.45)}
 
   .back-body{padding:28px 30px;overflow-y:auto;flex:1}
   .word{font-family:var(--serif);font-size:34px;line-height:1.2;margin:0 0 12px;letter-spacing:-.01em}
@@ -181,9 +184,11 @@
 
   [hidden]{display:none !important}
   @media (max-width:720px){
-    .learn{grid-template-columns:1fr;gap:18px}
-    .reel{width:min(100%,calc(46vh * 9 / 16));min-width:0;margin:0 auto}
-    .card{height:400px;min-height:0}
+    .card{--vw:calc(46vh * 9 / 16);height:calc(46vh + 220px)}
+    .face--front{flex-direction:column}
+    .frame{align-self:center;max-width:100%}
+    .captionbar{padding:16px 20px 18px}
+    .captionbar .subtitle{font-size:19px}
   }
   @media (max-width:560px){
     .row2{grid-template-columns:1fr}
@@ -258,39 +263,34 @@
   <!-- ══════════ 學習階段 ══════════ -->
   <section id="screen-learn" hidden>
     <h2 class="screen-title">先看短片，再翻卡看定義</h2>
-    <p class="lede">按播放看片段，看完翻到背面。每張卡停留多久、影片播了幾次都會自動記錄，不用計時。</p>
+    <p class="lede">卡片正面是短片，按播放看片段，看完翻到背面看定義。每張卡停留多久、影片播了幾次都會自動記錄，不用計時。</p>
 
-    <div class="learn">
-      <div class="reel">
-        <div class="frame">
-          <div id="player"></div>
-          <div class="still" id="still" hidden>
-            <div class="ph" id="stillph"></div>
-          </div>
-        </div>
-        <p class="cliplabel" id="cliplabel"></p>
-      </div>
-
-      <div class="stage">
-        <div class="card" id="card">
-          <div class="face face--front">
-            <div class="captionbar">
-              <p class="kicker" id="kicker"></p>
-              <p class="subtitle" id="subtitle"></p>
-              <p class="cue">按卡片或空白鍵翻面</p>
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="face face--front">
+          <div class="frame">
+            <div id="player"></div>
+            <div class="still" id="still" hidden>
+              <div class="ph" id="stillph"></div>
             </div>
           </div>
-          <div class="face face--back">
-            <div class="back-body">
-              <p class="word" id="b-word"></p>
-              <div class="chips" id="b-chips"></div>
-              <p class="def" id="b-def"></p>
-              <p class="def-zh" id="b-defzh"></p>
-              <div class="example"><p id="b-ex"></p><p class="ex-zh" id="b-exzh"></p></div>
-              <div class="srcline">
-                <span id="b-src"></span>
-                <span class="stamp" id="b-stamp"></span>
-              </div>
+          <div class="captionbar">
+            <p class="cliplabel" id="cliplabel"></p>
+            <p class="kicker" id="kicker"></p>
+            <p class="subtitle" id="subtitle"></p>
+            <p class="cue">按這裡或空白鍵翻面</p>
+          </div>
+        </div>
+        <div class="face face--back">
+          <div class="back-body">
+            <p class="word" id="b-word"></p>
+            <div class="chips" id="b-chips"></div>
+            <p class="def" id="b-def"></p>
+            <p class="def-zh" id="b-defzh"></p>
+            <div class="example"><p id="b-ex"></p><p class="ex-zh" id="b-exzh"></p></div>
+            <div class="srcline">
+              <span id="b-src"></span>
+              <span class="stamp" id="b-stamp"></span>
             </div>
           </div>
         </div>
@@ -838,7 +838,12 @@ function initPlayer(){
       events:{
         onReady:() => { V.ready = true; if (S.cards.length) cueClip(S.cards[S.idx]); },
         onStateChange:onPlayerState,
-        onError:e => { commitPlay(); showStill(S.cards[S.idx], "YouTube 回報錯誤代碼 " + e.data); }
+        onError:e => {
+          commitPlay();
+          // 101／150：版權方不允許在這個網址內嵌（音樂片段常見，且依網址而異，例如 localhost 可以、127.0.0.1 不行）
+          const why = (e.data === 101 || e.data === 150) ? "版權方不允許在這個網址內嵌（錯誤 " + e.data + "）" : "YouTube 回報錯誤代碼 " + e.data;
+          showStill(S.cards[S.idx], why);
+        }
       }
     });
   };
@@ -900,6 +905,7 @@ function flip(){
   const wasFlipped = card.classList.contains("flipped");
   card.classList.toggle("flipped");
   if (!wasFlipped) {
+    stopClip();                               // 翻到背面時影片暫停
     const e = logEntry(S.cards[S.idx]);
     e.flipCount += 1;
     if (e.firstFlipMs === null) e.firstFlipMs = now() - S.shownAt;

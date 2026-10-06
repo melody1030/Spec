@@ -20,7 +20,7 @@ The learning screen embeds the YouTube Shorts, and YouTube only allows embedding
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000/vocab-study-prototype.html> in Chrome, Edge or Safari. Once the repo is on GitHub Pages, the Pages URL works the same way.
+Then open <http://localhost:8000/vocab-study-prototype.html> in Chrome, Edge or Safari. Use `localhost`, **not** `127.0.0.1`: on `127.0.0.1`, two of the music clips are blocked (see the log below). Once the repo is on GitHub Pages, the Pages URL works the same way.
 
 Session data stays in memory, so **download the JSON/CSV before closing the tab**.
 
@@ -59,6 +59,11 @@ For each word, we also give the part of speech, an English definition, a Chinese
 ## Process log
 
 Newest entries go at the top.
+
+### 2026-10-06 — Video moved onto the flashcard front
+- The front of the card is now the Short itself, with the subtitle sentence next to it on desktop and below it on phones. The back still holds the definitions.
+- Flipping to the back pauses the video. The front is hidden mid-flip so the video can't show through on Safari.
+- **Embedding depends on the website address for music clips.** *Let It Be* (Lyrics Shorts 1) and *Faded* (Lyrics Shorts 3) play from `localhost` but return YouTube error 150 from `127.0.0.1`. That's the record label restricting which sites may embed them, so **they need checking again once the GitHub Pages URL exists.** When a clip is blocked, the card shows a clear message, or the screenshot if one has been added.
 
 ### 2026-10-05 — Embedded Shorts + vertical-video layout
 - Checked all 9 Shorts: every one allows embedding and plays in YouTube's official player. Lengths are 19–60 s.
