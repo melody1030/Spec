@@ -60,6 +60,14 @@ For each word, we also give the part of speech, an English definition, a Chinese
 
 Newest entries go at the top.
 
+### 2026-10-27 — Draft quiz added (needs review)
+- Added 43 cloze questions to `DATA.quiz`, one per card, each with 4 options. Each question's set and category match its card, so set A gets 22 questions and set B gets 21.
+- **The stems are new sentences, not the card's example sentence,** so the quiz tests the word rather than memory of the sentence.
+- **Wrong options** are the same part of speech but don't make sense in the sentence. None of them is another target word, because a participant might have learned that word through Duolingo.
+- The correct answer's position rotates through options 1–4 (11 / 11 / 11 / 10).
+- Ran the full flow with all 43 words: no validation errors, and the score, review list and CSV (43 rows) were all correct.
+- **To review (Jay / Jessica):** the difficulty of each item, especially options that might also fit the blank. Also decide whether questions should be shuffled, since they currently follow the same order as the cards.
+
 ### 2026-10-06 — Video moved onto the flashcard front
 - The front of the card is now the Short itself, with the subtitle sentence next to it on desktop and below it on phones. The back still holds the definitions.
 - Flipping to the back pauses the video. The front is hidden mid-flip so the video can't show through on Safari.
