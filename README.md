@@ -60,6 +60,20 @@ For each word, we also give the part of speech, an English definition, a Chinese
 
 Newest entries go at the top.
 
+### 2026-10-28 — Changes to protect the data (from a UX/HCI review)
+- **Participants no longer see the answers.**
+  - After the last question, the participant only sees a thank-you screen asking them to hand the device back.
+  - Score, per-item review with correct answers, and the download buttons are behind a "hold for 2 seconds" button for the researcher, so a casual click won't open it.
+  - Reason: showing the correct answers turns the results screen into a second round of learning and would contaminate any delayed post-test.
+  - The quiz hint no longer promises that answers are shown at the end.
+- **Quiz order is shuffled per participant.** Previously the questions followed the card order, so participants could use the order as a cue.
+  - The order is shuffled randomly for each session.
+  - The JSON has a new `quizOrder` field.
+  - Each answer gets a `position` field (1 = first question shown), and `position` is a new CSV column.
+- **Warning before data is lost.**
+  - From "開始學習" until the record is downloaded or copied, closing or reloading the tab shows the browser's "leave this page?" prompt.
+  - "換一位受試者" asks for confirmation if the record hasn't been saved.
+
 ### 2026-10-28 — Subtitle lines and clip ranges filled in
 - Every card now has `source.start` / `source.end`, so each card plays only a segment around its target word instead of the whole Short. Playback stops by itself at `end`.
 - After a first pass, every range was **doubled in length** (same midpoint, extended equally on both sides) to give more context. A range that hits the start or end of the Short extends on the other side instead. Ranges are now about 3–13 s for speech, and 4–30 s for lyrics.

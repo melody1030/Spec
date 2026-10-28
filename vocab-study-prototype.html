@@ -180,6 +180,10 @@
   .todobox h3{margin:0 0 6px;font-size:13.5px;color:var(--ink2)}
   .todobox ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink2)}
 
+  .hold{position:relative;overflow:hidden}
+  .hold i{position:absolute;inset:0;width:0;background:var(--line)}
+  .hold.holding i{width:100%;transition:width 2s linear}
+  .hold span{position:relative}
   .empty{background:var(--surface);border:1px dashed var(--line);border-radius:4px;padding:28px;text-align:center;color:var(--ink2);font-size:14.5px}
 
   [hidden]{display:none !important}
@@ -315,11 +319,20 @@
     <p class="qcount" id="qcount"></p>
     <p class="stem" id="stem"></p>
     <div class="options" id="options"></div>
-    <div class="actions"><span class="whoami">作答後直接進下一題，全部答完才看對錯。</span></div>
+    <div class="actions"><span class="whoami">選一個答案後會直接進下一題。</span></div>
   </section>
 
   <!-- ══════════ 分數畫面 ══════════ -->
+  <!-- 受試者只看到 #thanks；分數與正解在 #staffview，施測者按住按鈕才打開，避免結果頁變成第二輪學習（R5） -->
   <section id="screen-result" hidden>
+   <div id="thanks">
+    <h2 class="screen-title">測驗完成，謝謝你！</h2>
+    <p class="lede">請把電腦交還給施測人員。</p>
+    <div class="actions">
+      <button class="btn--ghost btn btn--small hold" id="unlock"><i></i><span>施測人員：按住 2 秒查看結果</span></button>
+    </div>
+   </div>
+   <div id="staffview" hidden>
     <h2 class="screen-title">測驗結束</h2>
     <div class="scoreline">
       <span class="scorenum" id="r-correct">0</span>
@@ -351,6 +364,7 @@
     <div class="actions">
       <button class="btn--ghost btn btn--small" id="again">換一位受試者</button>
     </div>
+   </div>
   </section>
 
 </div>
@@ -810,7 +824,8 @@ const S = {
   participantId:"", ageGroup:"", set:"A", category:"",
   cards:[], quiz:[], idx:0, qIdx:0,
   cardLog:new Map(), quizLog:[],
-  shownAt:0, qStart:0, startedAt:null, learnEndedAt:null, endedAt:null
+  shownAt:0, qStart:0, startedAt:null, learnEndedAt:null, endedAt:null,
+  unsaved:false   // 開始學習後為 true，下載或複製紀錄後才變回 false
 };
 
 const $ = id => document.getElementById(id);
@@ -880,6 +895,7 @@ function start(){
   S.cards = d.cards; S.quiz = d.quiz;
   S.idx = 0; S.qIdx = 0; S.cardLog = new Map(); S.quizLog = [];
   S.startedAt = new Date().toISOString();
+  S.unsaved = true;
 
   const who = $("whoami");
   who.hidden = false;
@@ -1069,6 +1085,13 @@ document.addEventListener("keydown", e => {
    ═══════════════════════════════════════════════════════════ */
 function startQuiz(){
   if (!S.quiz.length) { finish(); return; }
+  // 每位受試者的題序都隨機打亂（Fisher–Yates），避免照學習順序作答；實際題序記在 quizOrder
+  const q = S.quiz.slice();
+  for (let i = q.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [q[i], q[j]] = [q[j], q[i]];
+  }
+  S.quiz = q;
   S.qIdx = 0;
   show("quiz");
   renderQuestion();
@@ -1097,7 +1120,7 @@ function answer(i){
   const q = S.quiz[S.qIdx];
   const card = CARD_BY_ID.get(q.cardId);
   S.quizLog.push({
-    itemId:q.id, cardId:q.cardId,
+    position:S.qIdx + 1, itemId:q.id, cardId:q.cardId,
     targetWord: card ? card.targetWord : "",
     chosenIndex:i, chosenText:q.options[i],
     correct: i === q.answerIndex,
@@ -1120,6 +1143,7 @@ function buildRecord(){
   return {
     participantId:S.participantId, ageGroup:S.ageGroup, set:S.set, category:S.category,
     startedAt:S.startedAt, endedAt:S.endedAt,
+    quizOrder:S.quiz.map(q => q.id),
     totalTimeMs: learnMs + quizMs, learnTimeMs: learnMs, quizTimeMs: quizMs,
     cardEvents, quizEvents:S.quizLog,
     score:{ correct, total, accuracy: total ? +(correct/total).toFixed(3) : 0 }
@@ -1131,6 +1155,8 @@ function finish(){
   const rec = buildRecord();
   setProgress(100);
   show("result");
+  $("thanks").hidden = false;
+  $("staffview").hidden = true;
 
   $("r-correct").textContent = rec.score.correct;
   $("r-of").textContent = "／ " + rec.score.total + " 題答對";
@@ -1169,11 +1195,11 @@ function finish(){
 }
 
 function toCsv(rec){
-  const head = ["participantId","ageGroup","set","category","itemId","cardId","targetWord","chosenText","correct","responseMs","dwellMs","flipCount","playCount","playMs"];
+  const head = ["participantId","ageGroup","set","category","position","itemId","cardId","targetWord","chosenText","correct","responseMs","dwellMs","flipCount","playCount","playMs"];
   const dwell = new Map(rec.cardEvents.map(c => [c.cardId, c]));
   const rows = rec.quizEvents.map(ev => {
     const c = dwell.get(ev.cardId) || {};
-    return [rec.participantId, rec.ageGroup, rec.set, rec.category, ev.itemId, ev.cardId,
+    return [rec.participantId, rec.ageGroup, rec.set, rec.category, ev.position, ev.itemId, ev.cardId,
             ev.targetWord, ev.chosenText, ev.correct ? 1 : 0, ev.responseMs, c.dwellMs || 0, c.flipCount || 0, c.playCount || 0, c.playMs || 0];
   });
   return [head, ...rows].map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(",")).join("\n");
@@ -1187,6 +1213,7 @@ function download(text, filename, mime){
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    S.unsaved = false;
     $("copied").textContent = "已產生 " + filename;
   } catch (err) {
     $("copied").textContent = "這個瀏覽器擋下了下載，請改用下方欄位複製";
@@ -1205,6 +1232,7 @@ $("copy").addEventListener("click", async () => {
   const ta = $("dump");
   try {
     await navigator.clipboard.writeText(ta.value);
+    S.unsaved = false;
     $("copied").textContent = "已複製到剪貼簿";
   } catch (err) {
     ta.select();
@@ -1212,11 +1240,42 @@ $("copy").addEventListener("click", async () => {
   }
 });
 $("again").addEventListener("click", () => {
+  if (S.unsaved && !confirm("這位受試者的紀錄還沒下載或複製，換人後就會消失。確定要換下一位嗎？")) return;
+  S.unsaved = false;
   $("pid").value = ""; $("age").value = "";
   $("whoami").hidden = true;
   setProgress(null);
   show("setup");
   updateCount();
+});
+
+// 施測人員按住 2 秒才打開分數與正解，受試者隨手點一下不會看到
+(function initUnlock(){
+  const b = $("unlock");
+  let timer = null;
+  const begin = e => {
+    if (timer || (e.type === "keydown" && e.key !== "Enter" && e.key !== " ")) return;
+    e.preventDefault();
+    b.classList.add("holding");
+    timer = setTimeout(() => {
+      timer = null;
+      b.classList.remove("holding");
+      $("thanks").hidden = true;
+      $("staffview").hidden = false;
+    }, 2000);
+  };
+  const cancel = () => { clearTimeout(timer); timer = null; b.classList.remove("holding"); };
+  b.addEventListener("pointerdown", begin);
+  b.addEventListener("keydown", begin);
+  ["pointerup","pointerleave","pointercancel","keyup","blur"].forEach(t => b.addEventListener(t, cancel));
+  b.addEventListener("contextmenu", e => e.preventDefault());
+})();
+
+// 紀錄還沒下載就關分頁或重新整理時，請瀏覽器跳出確認（W1 規格第 8 節的最大風險）
+window.addEventListener("beforeunload", e => {
+  if (!S.unsaved) return;
+  e.preventDefault();
+  e.returnValue = "";
 });
 </script>
 </body>
