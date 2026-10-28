@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>影片播放檢查</title>
+<style>
+  :root{
+    --ink:#16202A; --ink2:#38434F; --muted:#5A6570; --paper:#ECEFEA; --surface:#FFFFFF; --line:#D3D9D2;
+    --ok:#2F6B4F; --no:#A33B32; --warn:#8A5A12;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+  .app{max-width:720px;margin:0 auto;padding:22px 20px 60px}
+  h1{font-size:22px;font-weight:600;margin:0 0 6px}
+  .lede{margin:0 0 20px;color:var(--ink2)}
+  .who{font-size:15px;color:var(--muted);margin:0 0 4px}
+  .btn{font:inherit;font-size:15px;font-weight:600;padding:12px 22px;min-height:44px;border-radius:3px;cursor:pointer;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+  .btn[disabled]{opacity:.4;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:4px;margin:20px 0 0;font-size:15px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:600;color:var(--ink2);font-size:15px}
+  td small{display:block;color:var(--muted);font-size:15px}
+  .s-wait{color:var(--muted)} .s-run{color:var(--ink2)} .s-ok{color:var(--ok);font-weight:600}
+  .s-blocked,.s-error{color:var(--no);font-weight:600} .s-timeout{color:var(--warn);font-weight:600}
+  .players{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+  .players div{width:180px}
+  .players p{margin:0 0 4px;font-size:15px;color:var(--muted)}
+  .done{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px 18px;margin-top:20px}
+  .done h2{font-size:18px;margin:0 0 6px}
+  .done p{margin:0;color:var(--ink2)}
+  @media (max-width:560px){ th:nth-child(1),td:nth-child(1){width:42%} }
+</style>
+</head>
+<body>
+<div class="app">
+  <p class="who" id="who"></p>
+  <h1>影片播放檢查</h1>
+  <p class="lede">這個檢查會在你的電腦上，把研究會用到的 9 支短片各試播幾秒（靜音），確認都能正常播放。大約需要 2 分鐘，檢查時請不要關閉這個頁面。</p>
+  <button class="btn" id="go">開始檢查</button>
+
+  <table>
+    <thead><tr><th>影片</th><th>播放器 A</th><th>播放器 B</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <div class="done" id="done" hidden>
+    <h2 id="done-title"></h2>
+    <p id="done-body"></p>
+  </div>
+
+  <div class="players">
+    <div><p>播放器 A</p><div id="p0"></div></div>
+    <div><p>播放器 B</p><div id="p1"></div></div>
+  </div>
+</div>
+
+<script>
+// 和 vocab-study-prototype.html 用的是同一批 Shorts
+const VIDEOS = [
+  { id:"tqvV1XzrWE0", title:"Standup · Shorts 1" },
+  { id:"COu4VGQ_ECI", title:"Standup · Shorts 2" },
+  { id:"EN9wmq_kkos", title:"Standup · Shorts 3" },
+  { id:"hGZLnvEf4oA", title:"American TV series · Shorts 1" },
+  { id:"d0-1GfKNVVU", title:"American TV series · Shorts 2" },
+  { id:"J9cz9ajKEvY", title:"American TV series · Shorts 3" },
+  { id:"IotJ26My0mg", title:"Lyrics · Shorts 1（Let It Be）" },
+  { id:"R9q4bQvCUA0", title:"Lyrics · Shorts 2（Moana）" },
+  { id:"4nfeAC6OiYM", title:"Lyrics · Shorts 3（Faded）" }
+];
+// A＝prototype 現在用的 youtube-nocookie；B＝一般 youtube.com，A 被擋時看看 B 能不能當備案
+const HOSTS = ["https://www.youtube-nocookie.com", "https://www.youtube.com"];
+const TIMEOUT_MS = 15000;
+
+const $ = id => document.getElementById(id);
+const LABEL = {
+  wait:"等待中", run:"檢查中…", ok:"可以播放",
+  blocked:"被擋（錯誤 {c}）", error:"錯誤 {c}", timeout:"沒有開始播放"
+};
+const NOTE = {
+  blocked:"版權方不允許在這個網址嵌入",
+  timeout:"可能是瀏覽器擋了自動播放，不一定是影片的問題"
+};
+
+let participant = "";
+const runId = Date.now().toString(36);
+
+function cell(v, h){ return $("c-" + v + "-" + h); }
+function setCell(v, h, status, code){
+  const td = cell(v, h);
+  td.className = "s-" + status;
+  td.innerHTML = LABEL[status].replace("{c}", code == null ? "" : code) +
+                 (NOTE[status] ? "<small>" + NOTE[status] + "</small>" : "");
+}
+
+$("rows").innerHTML = VIDEOS.map((v, i) =>
+  "<tr><td>" + v.title + "</td>" + HOSTS.map((_, h) => '<td id="c-' + i + '-' + h + '" class="s-wait">' + LABEL.wait + "</td>").join("") + "</tr>"
+).join("");
+
+// 受試者編號：Apps Script 由 google.script.url 取得網址參數，在本機則直接讀網址
+function readParticipant(cb){
+  if (window.google && google.script && google.script.url) {
+    google.script.url.getLocation(loc => cb((loc.parameter && loc.parameter.p) || ""));
+  } else {
+    cb(new URLSearchParams(location.search).get("p") || "");
+  }
+}
+readParticipant(p => { participant = p; $("who").textContent = p ? "受試者：" + p : ""; });
+
+/* ── YouTube 播放器 ── */
+let apiReady;
+const apiLoaded = new Promise(r => { apiReady = r; });
+window.onYouTubeIframeAPIReady = () => apiReady();
+const tag = document.createElement("script");
+tag.src = "https://www.youtube.com/iframe_api";
+tag.onerror = () => apiReady("api-failed");
+document.head.appendChild(tag);
+
+function makePlayer(slot, host){
+  return new Promise(resolve => {
+    const ctl = { player:null, waiter:null };
+    ctl.player = new YT.Player("p" + slot, {
+      host, width:180, height:320,
+      playerVars:{ playsinline:1, rel:0, controls:0, mute:1, iv_load_policy:3 },
+      events:{
+        onReady:() => resolve(ctl),
+        onStateChange:e => { if (e.data === YT.PlayerState.PLAYING && ctl.waiter) ctl.waiter({ status:"ok" }); },
+        onError:e => {
+          if (!ctl.waiter) return;
+          const blocked = e.data === 101 || e.data === 150;
+          ctl.waiter({ status: blocked ? "blocked" : "error", errorCode: e.data });
+        }
+      }
+    });
+  });
+}
+
+function tryVideo(ctl, videoId){
+  return new Promise(resolve => {
+    const t0 = Date.now();
+    const finish = r => {
+      if (!ctl.waiter) return;
+      ctl.waiter = null;
+      clearTimeout(timer);
+      ctl.player.pauseVideo();
+      resolve(Object.assign({ errorCode:null, ms:Date.now() - t0 }, r));
+    };
+    const timer = setTimeout(() => finish({ status:"timeout" }), TIMEOUT_MS);
+    ctl.waiter = finish;
+    ctl.player.mute();
+    ctl.player.loadVideoById({ videoId, startSeconds:1 });
+  });
+}
+
+async function run(){
+  $("go").disabled = true;
+  $("go").textContent = "檢查中…";
+  const results = [];
+  const failed = await apiLoaded;
+  for (let h = 0; h < HOSTS.length; h++) {
+    if (failed) {
+      VIDEOS.forEach((v, i) => { setCell(i, h, "error", "API"); results.push({ host:HOSTS[h], videoId:v.id, title:v.title, status:"error", errorCode:"api-failed", ms:0 }); });
+      continue;
+    }
+    const ctl = await makePlayer(h, HOSTS[h]);
+    for (let i = 0; i < VIDEOS.length; i++) {
+      setCell(i, h, "run");
+      const r = await tryVideo(ctl, VIDEOS[i].id);
+      setCell(i, h, r.status, r.errorCode);
+      results.push(Object.assign({ host:HOSTS[h], videoId:VIDEOS[i].id, title:VIDEOS[i].title }, r));
+    }
+  }
+  report(results);
+}
+
+function report(results){
+  const okA = results.filter(r => r.host === HOSTS[0] && r.status === "ok").length;
+  const payload = {
+    participant, runId,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    localTime: new Date().toString(),
+    userAgent: navigator.userAgent,
+    screen: screen.width + "x" + screen.height + " / " + innerWidth + "x" + innerHeight,
+    pageOrigin: location.origin,
+    results
+  };
+  $("done").hidden = false;
+  $("done-title").textContent = okA === VIDEOS.length ? "全部可以播放" : (VIDEOS.length - okA) + " 支影片在播放器 A 不能播";
+  $("go").textContent = "檢查完成";
+
+  if (window.google && google.script && google.script.run) {
+    $("done-body").textContent = "正在送出結果…";
+    google.script.run
+      .withSuccessHandler(() => { $("done-body").textContent = "結果已送給研究團隊，可以關閉這個頁面了。謝謝！"; })
+      .withFailureHandler(err => { $("done-body").textContent = "結果沒有送出（" + err.message + "）。請截圖這個畫面傳給研究團隊。"; })
+      .logResults(payload);
+  } else {
+    $("done-body").textContent = "本機測試：結果沒有送出，只印在開發者工具的 console。";
+    console.log("video-check", payload);
+    window.__videoCheck = payload;
+  }
+}
+
+$("go").addEventListener("click", run);
+</script>
+</body>
+</html>

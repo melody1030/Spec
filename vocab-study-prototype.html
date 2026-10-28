@@ -9,7 +9,8 @@
     --film:#101820;
     --ink:#16202A;
     --ink2:#38434F;
-    --muted:#6B7784;
+    --muted:#5A6570;      /* 在 --paper 上約 5:1、在白底上約 6:1，小字也過 WCAG AA */
+    --film-text:#A3ADB7;  /* 深色卡片上的次要文字，在 --film 上約 8:1 */
     --paper:#ECEFEA;
     --surface:#FFFFFF;
     --line:#D3D9D2;
@@ -34,8 +35,8 @@
   /* ---------- chrome ---------- */
   .topbar{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .brand{font-size:17px;font-weight:600;letter-spacing:.01em;margin:0}
-  .brand span{display:block;font-size:12.5px;font-weight:400;color:var(--muted);letter-spacing:.02em}
-  .whoami{font-size:13px;color:var(--ink2)}
+  .brand span{display:block;font-size:15px;font-weight:400;color:var(--muted);letter-spacing:.02em}
+  .whoami{font-size:15px;color:var(--ink2)}
   .whoami b{font-weight:600}
   .rule{height:1px;background:var(--line);margin:14px 0 26px}
   .track{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin:14px 0 26px}
@@ -73,7 +74,7 @@
   .btn[disabled]{opacity:.4;cursor:not-allowed}
   .btn--ghost{background:transparent;color:var(--ink2);border-color:var(--line);font-weight:500}
   .btn--ghost:hover{background:var(--surface);color:var(--ink)}
-  .btn--small{font-size:13.5px;padding:9px 15px}
+  .btn--small{font-size:15px;padding:10px 18px;min-height:44px}
   .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:26px}
   .spacer{flex:1}
 
@@ -81,7 +82,7 @@
   .app.wide{max-width:920px}
   .stage{perspective:1600px}
   .card{
-    --vw:max(220px,min(304px,calc((100vh - 250px) * 9 / 16)));
+    --vw:max(220px,min(304px,calc((100vh - 290px) * 9 / 16)));
     position:relative;height:calc(var(--vw) * 16 / 9);transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.75,.2,1)
   }
   .card.flipped{transform:rotateY(180deg)}
@@ -102,36 +103,44 @@
       #1B2732;
   }
   .still img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  .still .ph{color:rgba(255,255,255,.4);font-size:13px;letter-spacing:.04em;text-align:center;padding:0 24px}
-  .still .ph b{display:block;color:rgba(255,255,255,.62);font-size:14px;font-weight:600;margin-bottom:4px}
-  .cliplabel{margin:0 0 auto;font-size:12px;color:rgba(255,255,255,.45);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .still .ph{color:var(--film-text);font-size:15px;letter-spacing:.04em;text-align:center;padding:0 24px}
+  .still .ph b{display:block;color:#E1E6EA;font-size:16px;font-weight:600;margin-bottom:4px}
+  /* 片段播完時蓋住 YouTube 的結束畫面（避免點到其他影片），並提供「再播一次」 */
+  .replay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(16,24,32,.78);cursor:default}
+  .replay .btn{background:#fff;color:var(--ink);border-color:#fff}
+  .replay .btn:hover{background:#E1E6EA}
+  .cliplabel{margin:0 0 auto;font-size:15px;color:var(--film-text);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .captionbar{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 30px;background:var(--film)}
-  .captionbar .kicker{margin:0 0 14px;text-align:center;font-size:11.5px;letter-spacing:.12em;color:rgba(255,255,255,.4)}
+  .captionbar .kicker{margin:0 0 14px;text-align:center;font-size:15px;letter-spacing:.08em;color:var(--film-text)}
   .captionbar .subtitle{
     font-family:var(--serif);font-size:23px;line-height:1.55;color:#F2F4F5;margin:0;text-align:center
   }
-  .captionbar .stamp{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.6)}
+  .captionbar .stamp{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18);color:#D5DBE0}
   .captionbar mark{background:none;color:var(--caption);font-weight:700;box-shadow:inset 0 -2px 0 rgba(232,179,60,.45)}
-  .captionbar .cue{margin:auto 0 0;padding-top:14px;text-align:center;font-size:12.5px;color:rgba(255,255,255,.45)}
+  .captionbar .cue{margin:auto 0 0;padding-top:14px;text-align:center;font-size:15px;color:var(--film-text)}
 
   .back-body{padding:28px 30px;overflow-y:auto;flex:1}
   .word{font-family:var(--serif);font-size:34px;line-height:1.2;margin:0 0 12px;letter-spacing:-.01em}
   .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px}
-  .chip{font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:2px;color:var(--ink2);background:#F6F8F5}
+  .chip{font-size:15px;padding:2px 10px;border:1px solid var(--line);border-radius:2px;color:var(--ink2);background:#F6F8F5}
   .chip--cefr{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
   .def{font-family:var(--serif);font-size:17px;line-height:1.6;margin:0 0 6px}
   .def-zh{font-size:15px;color:var(--ink2);margin:0 0 20px}
   .example{border-left:2px solid var(--caption);padding:2px 0 2px 14px;margin:0 0 22px}
   .example p{margin:0;font-family:var(--serif);font-size:16px;color:var(--ink2);font-style:italic}
   .example p mark{background:none;color:var(--ink);font-weight:600}
-  .example p.ex-zh{font-family:var(--sans);font-style:normal;font-size:14px;color:var(--muted);margin-top:4px}
-  .srcline{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .example p.ex-zh{font-family:var(--sans);font-style:normal;font-size:15px;color:var(--muted);margin-top:4px}
+  .srcline{font-size:15px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .stamp{background:#F0F2EE;border:1px solid var(--line);padding:2px 7px;border-radius:2px;color:var(--ink2)}
 
-  .deckmeta{display:flex;justify-content:space-between;align-items:center;margin:16px 2px 0;font-size:13px;color:var(--muted)}
+  /* 換卡列固定在視窗底部，不用每張卡都往下捲才按得到「下一張」 */
+  .learnbar{position:sticky;bottom:0;z-index:2;margin-top:16px;padding:12px 2px 14px;background:var(--paper);border-top:1px solid var(--line)}
+  .learnbar .actions{margin-top:10px}
+  .deckmeta{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
+  @media (hover:none){ .keys{display:none} }   /* 觸控裝置沒有鍵盤，不顯示快捷鍵提示 */
 
   /* ---------- quiz ---------- */
-  .qcount{font-size:13px;color:var(--muted);margin:0 0 10px}
+  .qcount{font-size:15px;color:var(--muted);margin:0 0 10px}
   .stem{font-family:var(--serif);font-size:23px;line-height:1.6;margin:0 0 28px}
   .stem .blank{display:inline-block;min-width:110px;border-bottom:2px solid var(--caption);vertical-align:baseline}
   .options{display:flex;flex-direction:column;gap:10px}
@@ -142,11 +151,14 @@
   }
   .opt:hover{border-color:var(--ink2)}
   .opt .k{
-    flex:none;width:23px;height:23px;border-radius:2px;background:#F0F2EE;border:1px solid var(--line);
-    font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted);
+    flex:none;width:28px;height:28px;border-radius:2px;background:#F0F2EE;border:1px solid var(--line);
+    font-family:var(--sans);font-size:15px;font-weight:600;color:var(--muted);
     display:flex;align-items:center;justify-content:center
   }
   .opt:hover .k{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* 選了還能改，按「下一題」才送出 */
+  .opt[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:#F6F8F5}
+  .opt[aria-pressed=true] .k{background:var(--ink);color:#fff;border-color:var(--ink)}
 
   /* ---------- result ---------- */
   .scoreline{display:flex;align-items:flex-end;gap:14px;margin:0 0 4px}
@@ -188,7 +200,7 @@
 
   [hidden]{display:none !important}
   @media (max-width:720px){
-    .card{--vw:calc(46vh * 9 / 16);height:calc(46vh + 220px)}
+    .card{--vw:calc(38vh * 9 / 16);height:calc(38vh + 200px)}
     .face--front{flex-direction:column}
     .frame{align-self:center;max-width:100%}
     .captionbar{padding:16px 20px 18px}
@@ -266,8 +278,10 @@
 
   <!-- ══════════ 學習階段 ══════════ -->
   <section id="screen-learn" hidden>
-    <h2 class="screen-title">先看短片，再翻卡看定義</h2>
-    <p class="lede">卡片正面是短片，按播放看片段，看完翻到背面看定義。每張卡停留多久、影片播了幾次都會自動記錄，不用計時。</p>
+    <div id="learnintro">
+      <h2 class="screen-title">先看短片，再翻卡看定義</h2>
+      <p class="lede">卡片正面是短片，按播放看片段，看完翻到背面看定義。每張卡停留多久、影片播了幾次都會自動記錄，不用計時。</p>
+    </div>
 
     <div class="stage">
       <div class="card" id="card">
@@ -277,12 +291,15 @@
             <div class="still" id="still" hidden>
               <div class="ph" id="stillph"></div>
             </div>
+            <div class="replay" id="replay" hidden>
+              <button class="btn" id="replaybtn">再播一次</button>
+            </div>
           </div>
           <div class="captionbar">
             <p class="cliplabel" id="cliplabel"></p>
             <p class="kicker" id="kicker"></p>
             <p class="subtitle" id="subtitle"></p>
-            <p class="cue">按這裡或空白鍵翻面</p>
+            <p class="cue">按這裡<span class="keys">或空白鍵</span>翻面</p>
           </div>
         </div>
         <div class="face face--back">
@@ -301,16 +318,17 @@
       </div>
     </div>
 
-    <div class="deckmeta">
-      <span id="deckpos"></span>
-      <span>空白鍵翻面　←　→　換卡</span>
-    </div>
-
-    <div class="actions">
-      <button class="btn--ghost btn btn--small" id="prev">上一張</button>
-      <button class="btn btn--small" id="next">下一張</button>
-      <span class="spacer"></span>
-      <button class="btn" id="toquiz" hidden>開始測驗</button>
+    <div class="learnbar">
+      <div class="deckmeta">
+        <span id="deckpos"></span>
+        <span class="keys">空白鍵翻面　←　→　換卡</span>
+      </div>
+      <div class="actions">
+        <button class="btn--ghost btn btn--small" id="prev">上一張</button>
+        <button class="btn btn--small" id="next">下一張</button>
+        <span class="spacer"></span>
+        <button class="btn" id="toquiz" hidden>開始測驗</button>
+      </div>
     </div>
   </section>
 
@@ -319,7 +337,11 @@
     <p class="qcount" id="qcount"></p>
     <p class="stem" id="stem"></p>
     <div class="options" id="options"></div>
-    <div class="actions"><span class="whoami">選一個答案後會直接進下一題。</span></div>
+    <div class="actions">
+      <span class="whoami">選好答案後按「下一題」，按之前都可以改。</span>
+      <span class="spacer"></span>
+      <button class="btn" id="qnext" disabled>下一題</button>
+    </div>
   </section>
 
   <!-- ══════════ 分數畫面 ══════════ -->
@@ -896,6 +918,7 @@ function start(){
   S.idx = 0; S.qIdx = 0; S.cardLog = new Map(); S.quizLog = [];
   S.startedAt = new Date().toISOString();
   S.unsaved = true;
+  $("learnintro").hidden = false;
 
   const who = $("whoami");
   who.hidden = false;
@@ -954,25 +977,41 @@ function showStill(c, reason){
   }
 }
 
+function clipOpts(c){
+  const opts = { videoId:videoIdOf(c), startSeconds:c.source.start || 0 };
+  if (c.source.end != null) opts.endSeconds = c.source.end;
+  return opts;
+}
+
 function cueClip(c){
+  $("replay").hidden = true;
   if (V.failed) { showStill(c, V.failed); return; }
   if (!V.ready) return;                       // 播放器 ready 後會補 cue 目前這張
   $("still").hidden = true;
   $("player").hidden = false;
   V.active = false;
-  const opts = { videoId:videoIdOf(c), startSeconds:c.source.start || 0 };
-  if (c.source.end != null) opts.endSeconds = c.source.end;
-  V.player.cueVideoById(opts);
+  V.player.cueVideoById(clipOpts(c));
 }
 
 function onPlayerState(e){
-  const PLAYING = 1, BUFFERING = 3;
+  const UNSTARTED = -1, ENDED = 0, PLAYING = 1, BUFFERING = 3;
   const active = e.data === PLAYING || e.data === BUFFERING;
   if (active && !V.active) logEntry(S.cards[S.idx]).playCount += 1;   // 第一次播放會先經過緩衝
-  V.active = active;
+  // 從片段起點開始播時會出現 緩衝 → 未開始 → 緩衝 → 播放，中間的「未開始」不算一次新的播放
+  if (active) V.active = true;
+  else if (e.data !== UNSTARTED) V.active = false;
   if (e.data === PLAYING) { if (!V.playingSince) V.playingSince = now(); }
   else commitPlay();
+  $("replay").hidden = e.data !== ENDED;      // 片段播到 end 會進入 ENDED
 }
+
+// 「再播一次」重新載入同一段（會自動播放，算一次 playCount）；點這裡不翻卡
+$("replay").addEventListener("click", e => e.stopPropagation());
+$("replaybtn").addEventListener("click", () => {
+  if (!V.ready) return;
+  $("replay").hidden = true;
+  V.player.loadVideoById(clipOpts(S.cards[S.idx]));
+});
 
 function initPlayer(){
   if (location.protocol === "file:") { V.failed = "直接開檔時 YouTube 不允許內嵌，請改用網址開啟（見 README）"; return; }
@@ -1013,7 +1052,7 @@ function highlight(sentence, word){
 }
 
 function renderCard(i, first){
-  if (!first) commitDwell();
+  if (!first) { commitDwell(); $("learnintro").hidden = true; }   // 說明只在第一張出現，之後讓出空間給卡片
   S.idx = i;
   const c = S.cards[i];
   const cat = DATA.categories.find(x => x.id === c.category);
@@ -1077,6 +1116,7 @@ document.addEventListener("keydown", e => {
       const btn = $("options").children[n-1];
       if (btn) btn.click();
     }
+    if (e.key === "Enter" && !onControl && !$("qnext").disabled) $("qnext").click();
   }
 });
 
@@ -1107,14 +1147,28 @@ function renderQuestion(){
   q.options.forEach((opt, i) => {
     const b = document.createElement("button");
     b.className = "opt";
+    b.setAttribute("aria-pressed", "false");
     b.innerHTML = '<span class="k">' + (i+1) + '</span><span>' + esc(opt) + '</span>';
-    b.addEventListener("click", () => answer(i), { once:true });
+    b.addEventListener("click", () => choose(i));
     box.appendChild(b);
   });
 
+  $("qnext").disabled = true;
+  $("qnext").textContent = S.qIdx === S.quiz.length - 1 ? "完成測驗" : "下一題";
   setProgress(((S.qIdx+1) / S.quiz.length) * 100);
+  S.qChoice = null; S.qFirstMs = null; S.qChanges = 0;
   S.qStart = now();
 }
+
+// 選答案（可改），按「下一題」才送出
+function choose(i){
+  if (S.qChoice === null) S.qFirstMs = now() - S.qStart;
+  else if (i !== S.qChoice) S.qChanges += 1;
+  S.qChoice = i;
+  [...$("options").children].forEach((b, k) => b.setAttribute("aria-pressed", String(k === i)));
+  $("qnext").disabled = false;
+}
+$("qnext").addEventListener("click", () => { if (S.qChoice !== null) answer(S.qChoice); });
 
 function answer(i){
   const q = S.quiz[S.qIdx];
@@ -1124,7 +1178,9 @@ function answer(i){
     targetWord: card ? card.targetWord : "",
     chosenIndex:i, chosenText:q.options[i],
     correct: i === q.answerIndex,
-    responseMs: now() - S.qStart
+    responseMs: now() - S.qStart,       // 題目出現到按「下一題」
+    firstChoiceMs: S.qFirstMs,          // 題目出現到第一次點選
+    answerChanges: S.qChanges           // 送出前改了幾次答案
   });
   S.qIdx += 1;
   if (S.qIdx < S.quiz.length) renderQuestion();
@@ -1195,12 +1251,12 @@ function finish(){
 }
 
 function toCsv(rec){
-  const head = ["participantId","ageGroup","set","category","position","itemId","cardId","targetWord","chosenText","correct","responseMs","dwellMs","flipCount","playCount","playMs"];
+  const head = ["participantId","ageGroup","set","category","position","itemId","cardId","targetWord","chosenText","correct","responseMs","firstChoiceMs","answerChanges","dwellMs","flipCount","playCount","playMs"];
   const dwell = new Map(rec.cardEvents.map(c => [c.cardId, c]));
   const rows = rec.quizEvents.map(ev => {
     const c = dwell.get(ev.cardId) || {};
     return [rec.participantId, rec.ageGroup, rec.set, rec.category, ev.position, ev.itemId, ev.cardId,
-            ev.targetWord, ev.chosenText, ev.correct ? 1 : 0, ev.responseMs, c.dwellMs || 0, c.flipCount || 0, c.playCount || 0, c.playMs || 0];
+            ev.targetWord, ev.chosenText, ev.correct ? 1 : 0, ev.responseMs, ev.firstChoiceMs, ev.answerChanges,c.dwellMs || 0, c.flipCount || 0, c.playCount || 0, c.playMs || 0];
   });
   return [head, ...rows].map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(",")).join("\n");
 }

@@ -10,6 +10,7 @@ We're running a within-subjects experiment on learning vocabulary from short vid
 | --- | --- |
 | [`vocab-study-prototype.html`](vocab-study-prototype.html) | Single-file prototype covering setup → learn (embedded Short + flashcard) → quiz → result. It needs no build step. |
 | [`W1_技術方案與頁面流程v2.md`](W1_技術方案與頁面流程v2.md) | Week 1 front-end spec: requirements R1–R8, the tech choice, timing metrics, privacy, and page flow |
+| [`apps-script/video-check/`](apps-script/video-check/) | Video playback check: a Google Apps Script web app that tries the 9 Shorts on a participant's computer and writes the results to a Google Sheet. Deploy steps are in [`DEPLOY.md`](apps-script/video-check/DEPLOY.md). |
 | [`docs/Specialization-Team-Project-Proposal.pdf`](docs/Specialization-Team-Project-Proposal.pdf) | Team proposal. **This is the source of truth for the study content** (clips, target words, definitions, examples). |
 
 ## Running the prototype
@@ -59,6 +60,45 @@ For each word, we also give the part of speech, an English definition, a Chinese
 ## Process log
 
 Newest entries go at the top.
+
+### 2026-10-28 — Video check page for remote participants
+- Participants are in Taiwan and the US, each on their own computer. Before turning the prototype into a Google Apps Script web app, we need to know whether YouTube allows embedding there.
+  - Apps Script pages are served from a `googleusercontent.com` address.
+  - The music clips are already known to be blocked on some addresses.
+- Added `apps-script/video-check/`. The page:
+  - plays each of the 9 Shorts for a few seconds, muted, in two players: `youtube-nocookie.com` (what the prototype uses) and `youtube.com` (fallback);
+  - records "plays", "blocked (error 101/150)", "other error" or "didn't start" (usually autoplay blocked);
+  - writes one row per video × player to the sheet, with participant ID, time zone, browser and page address.
+- Tested locally:
+  - on `localhost`, all 18 checks played;
+  - on `127.0.0.1`, it correctly reported *Let It Be* and *Faded* as blocked (error 150) in both players.
+- **Next:** Jay deploys it (see `DEPLOY.md`), the team tests it from Taiwan and the US, then each participant runs it on the computer they'll use for the study.
+
+### 2026-10-28 — Interface fixes (from the same UX/HCI review)
+- **Card navigation stays on screen.**
+  - The page counter and the previous/next buttons now stick to the bottom of the window, so participants don't have to scroll down on every card.
+  - The "先看短片，再翻卡看定義" instructions only appear on the first card, and the card is slightly shorter.
+  - At 800×724 and on a 375 px phone, from the second card on, the whole card and the buttons fit on one screen.
+  - Phones and tablets don't show the keyboard shortcut hints.
+- **"再播一次" (play again).**
+  - When a clip reaches `source.end`, a dark overlay with a "再播一次" button covers the video. It also hides YouTube's end screen, so participants can't click through to other videos.
+  - A replay counts as one more `playCount`.
+- **Fixed `playCount` counting one play as two.**
+  - When a clip starts from `source.start`, YouTube's player briefly reports "not started" between buffering and playing, and this was logged as a second play.
+  - **Exports made before this fix have `playCount` roughly doubled.** So far those are test data only.
+- **Quiz answers are confirmed with a button.**
+  - Clicking an option (or pressing 1–4) only selects it. Participants can change it until they press "下一題" (or Enter). The last question's button says "完成測驗".
+  - Each answer now records:
+    - `responseMs`: question shown → "下一題" pressed;
+    - `firstChoiceMs` (new): question shown → first click;
+    - `answerChanges` (new): times the answer was changed before submitting.
+  - `firstChoiceMs` and `answerChanges` are also new CSV columns.
+- **Readability (spec R7).**
+  - Text participants see on the learn, quiz and thank-you screens is now 15 px or larger, including small buttons, which are at least 44 px tall.
+  - Grey text was darkened so it reaches at least 4.5:1 contrast (WCAG AA):
+    - `--muted` is now `#5A6570`;
+    - secondary text on the dark card is `#A3ADB7`.
+  - Screens only the researcher sees (setup notices, results view) were left as they were.
 
 ### 2026-10-28 — Changes to protect the data (from a UX/HCI review)
 - **Participants no longer see the answers.**
