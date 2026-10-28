@@ -60,6 +60,22 @@ For each word, we also give the part of speech, an English definition, a Chinese
 
 Newest entries go at the top.
 
+### 2026-10-28 — Subtitle lines and clip ranges filled in
+- Every card now has `source.start` / `source.end`, so each card plays only a segment around its target word instead of the whole Short. Playback stops by itself at `end`.
+- After a first pass, every range was **doubled in length** (same midpoint, extended equally on both sides) to give more context. A range that hits the start or end of the Short extends on the other side instead. Ranges are now about 3–13 s for speech, and 4–30 s for lyrics.
+- **Standup and TV series (29 cards):** `sentence` now holds the line spoken in the clip. To get them:
+  - downloaded each Short's caption file with yt-dlp (captions only, no video);
+  - checked the uncertain lines against the English subtitles burned into the video.
+  - Lines are written as they appear on screen, including the clip's own spelling and censoring, e.g. *buildin'*, *f\*\*k*.
+- **Lyrics (14 cards):** only the time ranges are filled in. The music Shorts have no caption file, so the ranges come from stepping through the video frame by frame:
+  - *Let It Be* shows a whole verse at a time, so each word's range covers its verse.
+  - The other two songs show one line at a time, so their ranges are tighter.
+  - **`sentence` is still empty.** We didn't copy the song lyrics into the repo, so the front shows the PDF example sentence for now. If the team decides to use the lyric line, type it in from the subtitle on screen.
+- **To review:**
+  - *be supposed to be sth*: the clip only says "Supposed to go in the other direction", which isn't the same structure as the target phrase.
+  - *smile*: the card is a verb, but the clip uses the noun ("A smile goes a long way").
+  - Both *wisdom* (TV) and *pass on* use the same line, and so do *rude* and *sneeze*. Each pair is split across A/B, so a participant only sees one card of each pair.
+
 ### 2026-10-27 — Draft quiz added (needs review)
 - Added 43 cloze questions to `DATA.quiz`, one per card, each with 4 options. Each question's set and category match its card, so set A gets 22 questions and set B gets 21.
 - **The stems are new sentences, not the card's example sentence,** so the quiz tests the word rather than memory of the sentence.
