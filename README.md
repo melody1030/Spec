@@ -10,6 +10,7 @@ We're running a within-subjects experiment on learning vocabulary from short vid
 | --- | --- |
 | [`vocab-study-prototype.html`](vocab-study-prototype.html) | Single-file prototype covering setup → learn (embedded Short + flashcard) → quiz → result. It needs no build step. |
 | [`W1_技術方案與頁面流程v2.md`](W1_技術方案與頁面流程v2.md) | Week 1 front-end spec: requirements R1–R8, the tech choice, timing metrics, privacy, and page flow |
+| [`apps-script/study/`](apps-script/study/) | **The study website for remote participants.** It's a Google Apps Script web app with two pages:<br>• a participant page: one fixed link per person; each day the participant picks a video category, and 2 unlearned words from their group are chosen in it;<br>• a researcher page (password protected): progress, daily messages, preview and data.<br>Records go to a Google Sheet. Deploy steps are in [`DEPLOY.md`](apps-script/study/DEPLOY.md). |
 | [`apps-script/video-check/`](apps-script/video-check/) | Video playback check: a Google Apps Script web app that tries the 9 Shorts on a participant's computer and writes the results to a Google Sheet. Deploy steps are in [`DEPLOY.md`](apps-script/video-check/DEPLOY.md). |
 | [`docs/Specialization-Team-Project-Proposal.pdf`](docs/Specialization-Team-Project-Proposal.pdf) | Team proposal. **This is the source of truth for the study content** (clips, target words, definitions, examples). |
 
@@ -60,6 +61,81 @@ For each word, we also give the part of speech, an English definition, a Chinese
 ## Process log
 
 Newest entries go at the top.
+
+### 2026-10-28 — Clear-data button on the researcher page, with safeguards
+- The data section of the researcher page now has a red **清除資料 (clear data)** box. It can delete test data (TEST rows) only, one participant's records, or everything.
+- **Safeguards:**
+  1. Choose the scope first.
+  2. A summary shows how many session and card records will be deleted, with a red warning when real records are included.
+  3. Type a confirmation phrase: 「刪除」, or 「刪除全部」 for everything. The delete button stays disabled until it matches.
+  4. The server checks the access token and the phrase again.
+  5. Before deleting, the server copies `Sessions` and `Cards` into timestamped backup sheets, so a mistake can be undone by pasting the rows back.
+  - If nothing matches, nothing is deleted and no backup is made.
+- Rows kept after a delete are written back with date-like text prefixed by `'`, so Google Sheets doesn't turn them into dates.
+- **Tested:**
+  - In Node: 44 checks, including no token, wrong phrase, missing participant, test only, one participant, nothing to delete, everything, and backup contents.
+  - The fake sheet now converts date-like text like Google Sheets does. The write-back test fails if the `'` prefix is removed.
+  - In the browser with the mock: wrong or partial phrase keeps the button disabled; 「刪除」 isn't enough for "everything"; cancel; deleting the TEST rows; the "nothing to delete" case.
+
+### 2026-10-28 — Home page asks who you are; researchers log in with a password
+- Opening the web app without an ID (`…/exec`) shows a home page (`home.html`) with two choices. Each one opens its own small form:
+  - **我是受試者 (participant):** enter your ID (e.g. `p01`, case and spaces don't matter) to go to your own page.
+  - **我是施測者 (researcher):** enter the researcher password to go to the researcher page.
+- **Researchers no longer need a Google account.**
+  - The password is stored in Script Properties (`STAFF_PASSWORD`), so it never appears in the page source.
+  - The server checks it and returns an access token that is valid for 6 hours. The token is kept in the browser tab, so the researcher page doesn't ask again.
+  - The researcher page itself also asks for the password if there's no valid token, for example when opened directly or after the token expires.
+  - After 10 wrong attempts within 10 minutes, login pauses for 10 minutes.
+  - There's a log-out button.
+- **Deployment is simpler:** one deployment (run as me, anyone can access) serves all three pages. The second deployment, `STAFF_EMAILS`, `staffUrl` and sharing the sheet with the team are all gone.
+- **Fixed:** opening one of these `.html` files directly (as the preview pane did) left buttons that did nothing, because the shared files aren't included that way. These pages now show a note explaining how to preview them instead.
+- **Tested:**
+  - In the browser, with the local mock (password `test`): wrong password, correct password → researcher page without a second prompt, log out, opening the researcher page directly.
+  - In Node: 32 checks, including no token / fake token / wrong password / correct password / lockout after 10 failures.
+
+### 2026-10-28 — Participants choose a video category each day
+- The team wants participants to pick the topic they like.
+- Each group still learns the same 14 words, so the pre- and post-tests don't change. Only the order is up to the participant.
+- **How it works:**
+  - Before each session, the participant picks stand-up, TV series or lyrics.
+  - The page then takes the next 2 unlearned words in that category from their group's list (`words` in `config.html`, in list order).
+  - If the category has only 1 word left, the second word comes from the category with the most words left.
+  - A category with no words left can't be picked.
+  - Group Y has 3 stand-up and 5 TV-series words, so this top-up will happen. The total is always 14, so every day still gets exactly 2 words.
+- **Recorded data:**
+  - The chosen category is saved as `chosenCategory` in `Sessions`, so preference can be analysed.
+  - The server returns the words already learned.
+  - The server flags a session `card-mismatch` if the words sent are from the other group or were already learned.
+- `config.html` now lists each group's 14 words (`words`) instead of a fixed day-by-day `schedule`. The researcher page shows the words by group × category.
+- **Tested:**
+  - In Node: 28 checks, including returning learned words, `card-mismatch`, and `chosenCategory`.
+  - With the mock backend: picked stand-up twice for P02 (the second day was topped up with a lyrics word, and stand-up then became unavailable), then ran all 7 days. All 14 Y words were learned exactly once.
+
+### 2026-10-28 — Study website: participant and researcher pages
+- The team chose:
+  - **an Apps Script web app** for hosting, provided the video check passes;
+  - a Prototype session that **ends after the 2 cards**, with the actual time recorded;
+  - "which day" **based on progress**.
+  - (How long the Duolingo part should be is not settled yet, so the pages only show which part comes first.)
+- Built `apps-script/study/`.
+- **Participant page** (`?p=P01`):
+  - Each participant gets one fixed link.
+  - The server looks up their progress. The day is the number of completed days + 1, and the group (X/Y) and sequence (A/B) come from `config.html`.
+  - The page shows that day's 2 cards, using the same card design as the prototype, and says whether to do Prototype or Duolingo first.
+  - When the participant finishes, the record is sent to the sheet automatically, along with time zone, local date, browser and video error codes.
+  - Each local date allows only one session. A second one the same day is flagged `duplicate` and doesn't count.
+  - If sending fails, the record is kept in the browser and resent the next time the link is opened. There's also a backup file to download.
+- **Researcher page** (`?view=staff`, only for addresses in `STAFF_EMAILS`):
+  - progress grid (participant × day);
+  - daily reminder messages, generated from each participant's own progress;
+  - preview of any day with a `TEST` ID;
+  - data summary and a config check.
+- The participant list and the 7-day × X/Y schedule are in `config.html`. Card content is generated from the prototype by `dev/build-cards.mjs`.
+  - **wisdom uses the Lyrics card (`c-lyrics-01`).** The TV card shares its sentence with *pass on*, which X participants see on day 2.
+- **Tested:**
+  - `dev/server.mjs` + `dev/mock.js` run the pages locally with a mock backend. I went through day 1 → same-day reopen → next day → failed submit and resend → wrong ID / missing ID → TEST preview → all 7 days done → researcher page, on both desktop and a 375 px phone.
+  - `Code.gs` was tested in Node with fake Google services: 22 checks covering progress, duplicates, day mismatch, TEST rows, staff access, and dates that Google Sheets might turn into date values.
+  - **It has not been run on Apps Script yet.**
 
 ### 2026-10-28 — Video check page for remote participants
 - Participants are in Taiwan and the US, each on their own computer. Before turning the prototype into a Google Apps Script web app, we need to know whether YouTube allows embedding there.

@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>今天的單字</title>
+<style>
+  :root{
+    --film:#101820; --film-text:#A3ADB7;
+    --ink:#16202A; --ink2:#38434F; --muted:#5A6570;
+    --paper:#ECEFEA; --surface:#FFFFFF; --line:#D3D9D2;
+    --caption:#E8B33C; --ok:#2F6B4F; --no:#A33B32;
+    --test:#7A4E9C;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    --serif:Georgia,"Iowan Old Style","Times New Roman","Songti TC",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .app{max-width:640px;margin:0 auto;padding:22px 20px 80px}
+  .app.wide{max-width:920px}
+  [hidden]{display:none !important}
+  [data-raw] .app{display:none}
+
+  .topbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:28px}
+  .brand{margin:0;font-size:17px;font-weight:600}
+  .who{margin:0;font-size:15px;color:var(--ink2);font-weight:600}
+  .testbar{background:#F1E9F7;border:1px solid #D9C6E8;color:var(--test);border-radius:4px;padding:8px 12px;font-size:15px;margin:-12px 0 24px}
+
+  h1{font-size:26px;line-height:1.35;margin:0 0 10px;font-weight:600}
+  .eyebrow{margin:0 0 6px;font-size:15px;color:var(--muted);letter-spacing:.04em}
+  .lede{margin:0 0 20px;color:var(--ink2);font-size:17px}
+  .contact{margin:28px 0 0;font-size:15px;color:var(--muted)}
+
+  .days{display:flex;gap:6px;margin:4px 0 24px;max-width:340px}
+  .days i{flex:1;height:8px;border-radius:2px;background:var(--line)}
+  .days i.done{background:var(--ink)}
+  .days i.today{background:var(--caption)}
+
+  .cats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 10px}
+  .cat{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:84px;padding:14px 16px;text-align:left;font:inherit;cursor:pointer;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px}
+  .cat b{font-size:19px;font-weight:600}
+  .cat span{font-size:15px;color:var(--muted)}
+  .cat:hover{border-color:var(--ink2)}
+  .cat[aria-checked=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);background:#F6F8F5}
+  .cat[aria-checked=true] b::after{content:"　✓";color:var(--ok)}
+  .cat:disabled{cursor:not-allowed;background:transparent;color:var(--muted)}
+  .cat:disabled b{color:var(--muted)}
+  .cat:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .catnote{margin:0 0 22px;font-size:15px;color:var(--ink2);min-height:1.6em}
+  .steps{margin:0 0 20px;padding-left:22px;font-size:17px;color:var(--ink2)}
+  .steps li+li{margin-top:4px}
+  .order{margin:0 0 24px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:4px;font-size:16px}
+  .order b{font-weight:600}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;font:inherit;font-size:17px;font-weight:600;padding:12px 26px;border-radius:3px;cursor:pointer;
+    background:var(--ink);color:#fff;border:1px solid var(--ink);text-decoration:none}
+  .btn:hover{background:#000}
+  .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--ink2);border-color:var(--line);font-weight:500}
+  .btn.ghost:hover{background:var(--surface);color:var(--ink)}
+  .btn.small{min-height:44px;font-size:15px;padding:10px 18px}
+  .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .hint{font-size:15px;color:var(--muted)}
+  .spacer{flex:1}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ---------- flashcard（和 vocab-study-prototype.html 同一套） ---------- */
+  .stage{perspective:1600px}
+  .card{--vw:max(220px,min(304px,calc((100vh - 270px) * 9 / 16)));position:relative;height:calc(var(--vw) * 16 / 9);transform-style:preserve-3d;transition:transform .5s cubic-bezier(.2,.75,.2,1);cursor:pointer}
+  .card.flipped{transform:rotateY(180deg)}
+  .card .face{transition:visibility 0s .25s}
+  .card.flipped .face--front,.card:not(.flipped) .face--back{visibility:hidden}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:4px;overflow:hidden;display:flex;flex-direction:column}
+  .face--front{flex-direction:row;background:var(--film)}
+  .face--back{transform:rotateY(180deg);background:var(--surface);border:1px solid var(--line)}
+  .frame{position:relative;flex:none;width:var(--vw);aspect-ratio:9/16;max-width:100%;background:#000;cursor:default}
+  .frame #player,.frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .still{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1B2732}
+  .still p{color:var(--film-text);font-size:15px;text-align:center;padding:0 22px;margin:0}
+  .still b{display:block;color:#E1E6EA;font-size:16px;margin-bottom:4px}
+  .replay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(16,24,32,.78)}
+  .replay .btn{background:#fff;color:var(--ink);border-color:#fff}
+  .captionbar{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 30px;min-width:0}
+  .cliplabel{margin:0 0 auto;font-size:15px;color:var(--film-text)}
+  .kicker{margin:0 0 14px;text-align:center;font-size:15px;letter-spacing:.08em;color:var(--film-text)}
+  .subtitle{font-family:var(--serif);font-size:23px;line-height:1.55;color:#F2F4F5;margin:0;text-align:center}
+  .subtitle mark{background:none;color:var(--caption);font-weight:700;box-shadow:inset 0 -2px 0 rgba(232,179,60,.45)}
+  .cue{margin:auto 0 0;padding-top:14px;text-align:center;font-size:15px;color:var(--film-text)}
+  .back-body{padding:28px 30px;overflow-y:auto;flex:1}
+  .word{font-family:var(--serif);font-size:34px;line-height:1.2;margin:0 0 12px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px}
+  .chip{font-size:15px;padding:2px 10px;border:1px solid var(--line);border-radius:2px;color:var(--ink2);background:#F6F8F5}
+  .chip.cefr{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+  .def{font-family:var(--serif);font-size:18px;line-height:1.6;margin:0 0 6px}
+  .def-zh{font-size:16px;color:var(--ink2);margin:0 0 20px}
+  .example{border-left:2px solid var(--caption);padding:2px 0 2px 14px;margin:0}
+  .example p{margin:0;font-family:var(--serif);font-size:17px;color:var(--ink2);font-style:italic}
+  .example p mark{background:none;color:var(--ink);font-weight:600}
+  .example .ex-zh{font-family:var(--sans);font-style:normal;font-size:15px;color:var(--muted);margin-top:4px}
+
+  .learnbar{position:sticky;bottom:0;z-index:2;margin-top:16px;padding:12px 2px 14px;background:var(--paper);border-top:1px solid var(--line)}
+  .learnbar .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .pos{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted)}
+  .pos .dots{display:flex;gap:5px}
+  .pos .dots i{width:26px;height:6px;border-radius:2px;background:var(--line)}
+  .pos .dots i.on{background:var(--ink)}
+  .keys{font-size:15px;color:var(--muted)}
+  @media (hover:none){ .keys{display:none} }
+
+  /* ---------- 完成 ---------- */
+  .sent{display:flex;align-items:center;gap:8px;font-size:17px;margin:0 0 6px}
+  .sent.ok{color:var(--ok)} .sent.wait{color:var(--muted)} .sent.no{color:var(--no)}
+  .next{margin:18px 0 22px;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:4px;font-size:16px}
+  .failbox{margin-top:22px;padding:16px;border:1px solid #E3C3BF;background:#FBEFEE;border-radius:4px;display:flex;flex-direction:column;gap:12px}
+  .failbox p{margin:0;font-size:15px;color:var(--ink2)}
+  textarea{width:100%;height:90px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:1px solid var(--line);border-radius:3px;padding:8px;background:#F8FAF7;color:var(--ink2)}
+
+  @media (max-width:560px){ .cats{grid-template-columns:minmax(0,1fr)} .cat{min-height:0} }
+  @media (max-width:720px){
+    .card{--vw:calc(38vh * 9 / 16);height:calc(38vh + 200px)}
+    .face--front{flex-direction:column}
+    .frame{align-self:center}
+    .captionbar{padding:14px 18px 16px}
+    .subtitle{font-size:19px}
+  }
+  @media (prefers-reduced-motion:reduce){ .card{transition:none} }
+</style>
+<?!= include('config'); ?>
+<?!= include('cards'); ?>
+<?!= include('common'); ?>
+</head>
+<body>
+<script>
+// 直接打開原始檔時，include 不會展開、CONFIG 不存在：顯示說明，不要給一個按了沒反應的頁面
+if (typeof CONFIG === "undefined") {
+  document.documentElement.setAttribute("data-raw", "");
+  document.write('<p style="font-family:sans-serif;font-size:16px;line-height:1.6;padding:24px;max-width:580px">這是原始檔，不能直接打開。' +
+    '本機預覽請在終端機執行 <code>node apps-script/study/dev/server.mjs</code>，再打開 <a href="http://localhost:8100/">http://localhost:8100/</a>；' +
+    '正式使用請部署到 Apps Script（見 DEPLOY.md）。</p>');
+}
+</script>
+<div class="app" id="app">
+  <header class="topbar">
+    <p class="brand">今天的單字</p>
+    <p class="who" id="who"></p>
+  </header>
+  <div class="testbar" id="testbar" hidden></div>
+
+  <section id="s-loading"><p class="lede">準備中…</p></section>
+
+  <section id="s-msg" hidden>
+    <h1 id="msg-title"></h1>
+    <p class="lede" id="msg-body"></p>
+    <div class="days" id="msg-days" aria-hidden="true"></div>
+    <p class="contact" id="msg-contact"></p>
+  </section>
+
+  <section id="s-start" hidden>
+    <p class="eyebrow" id="st-eyebrow"></p>
+    <h1>今天想學哪一類影片？</h1>
+    <div class="days" id="st-days" aria-hidden="true"></div>
+    <div class="cats" id="st-cats" role="radiogroup" aria-label="影片類別"></div>
+    <p class="catnote" id="st-catnote">選一類，今天會學這一類的 2 個字。</p>
+    <ol class="steps">
+      <li>按播放看影片片段。</li>
+      <li>按卡片翻到背面，看這個字的意思。</li>
+      <li>兩張都看完，按「完成今天的學習」。</li>
+    </ol>
+    <p class="order" id="st-order"></p>
+    <div class="actions">
+      <button class="btn" id="go" disabled>開始</button>
+      <span class="hint" id="st-est"></span>
+    </div>
+    <p class="contact" id="st-contact"></p>
+  </section>
+
+  <section id="s-learn" hidden>
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="face face--front">
+          <div class="frame" id="frame">
+            <div id="player"></div>
+            <div class="still" id="still" hidden><p id="stillmsg"></p></div>
+            <div class="replay" id="replay" hidden><button class="btn small" id="replaybtn">再播一次</button></div>
+          </div>
+          <div class="captionbar">
+            <p class="cliplabel" id="cliplabel"></p>
+            <p class="kicker" id="kicker"></p>
+            <p class="subtitle" id="subtitle"></p>
+            <p class="cue">按這裡<span class="keys">或空白鍵</span>翻面</p>
+          </div>
+        </div>
+        <div class="face face--back">
+          <div class="back-body">
+            <p class="word" id="b-word"></p>
+            <div class="chips" id="b-chips"></div>
+            <p class="def" id="b-def"></p>
+            <p class="def-zh" id="b-defzh"></p>
+            <div class="example"><p id="b-ex"></p><p class="ex-zh" id="b-exzh"></p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="learnbar">
+      <div class="row">
+        <span class="pos"><span class="dots" id="dots"></span><span id="deckpos"></span></span>
+        <span class="spacer"></span>
+        <span class="keys">空白鍵翻面　←　→　換卡</span>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost small" id="prev">上一張</button>
+        <button class="btn small" id="next">下一張</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="s-done" hidden>
+    <h1>今天完成了</h1>
+    <p class="sent wait" id="done-status">正在送出紀錄…</p>
+    <p class="hint" id="done-time"></p>
+    <div class="next" id="done-next"></div>
+    <div class="actions"><a class="btn" id="done-form" target="_blank" rel="noopener" hidden>填今天的回饋表單</a></div>
+    <div class="failbox" id="failbox" hidden>
+      <p id="failmsg"></p>
+      <div class="actions">
+        <button class="btn small" id="retry">重試</button>
+        <button class="btn ghost small" id="backup">下載備份檔</button>
+      </div>
+      <p>下載也不行的話，請把下面這段文字全部複製，貼給研究團隊：</p>
+      <textarea id="dump" readonly></textarea>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ═══════════ 狀態 ═══════════ */
+const S = {
+  pid:"", test:false, plan:null, completed:0,
+  idx:0, shownAt:0, startedAtMs:0, startedAt:"",
+  log:[], record:null, unsaved:false
+};
+const PENDING_KEY = "spec-study-pending";
+
+function show(id){
+  ["s-loading","s-msg","s-start","s-learn","s-done"].forEach(s => { $(s).hidden = s !== id; });
+  $("app").classList.toggle("wide", id === "s-learn");
+  window.scrollTo({ top:0 });
+}
+function contactText(lead){
+  return (lead || "如果有問題，") + "請聯絡 " + CONFIG.contactName + (CONFIG.contactHow ? "（" + CONFIG.contactHow + "）" : "") + "。";
+}
+function renderDays(el, completed, today){
+  el.innerHTML = Array.from({ length:DAYS }, (_, i) =>
+    '<i class="' + (i + 1 <= completed ? "done" : i + 1 === today ? "today" : "") + '"></i>').join("");
+}
+function message(title, body, completed){
+  $("msg-title").textContent = title;
+  $("msg-body").textContent = body;
+  $("msg-days").hidden = completed == null;
+  if (completed != null) renderDays($("msg-days"), completed, 0);
+  $("msg-contact").textContent = contactText();
+  show("s-msg");
+}
+
+/* ═══════════ 沒送出的紀錄先存在這台電腦，下次打開再補送 ═══════════ */
+function readPending(){ try { return JSON.parse(localStorage.getItem(PENDING_KEY) || "[]"); } catch (e) { return []; } }
+function writePending(list){ try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch (e) {} }
+function addPending(rec){ const l = readPending().filter(r => r.sessionId !== rec.sessionId); l.push(rec); writePending(l); }
+function dropPending(id){ writePending(readPending().filter(r => r.sessionId !== id)); }
+async function flushPending(){
+  for (const rec of readPending()) {
+    try { await API.call("submitSession", rec); dropPending(rec.sessionId); } catch (e) { /* 下次再試 */ }
+  }
+}
+
+/* ═══════════ 開始 ═══════════ */
+async function boot(){
+  const cfg = checkConfig();
+  if (cfg.errs.length) return message("研究設定有問題", "這個頁面暫時不能使用。", null);
+
+  const params = await API.params();
+  const pid = String(params.p || "").trim().toUpperCase();
+  if (!pid) return message("連結不完整", "這條連結少了你的編號，請確認是研究團隊給你的那一條。", null);
+  S.pid = pid;
+  $("who").textContent = pid;
+
+  await flushPending();
+
+  if (isTestId(pid)) {
+    // 施測者預覽：組別、序列、第幾天由網址指定，資料標成測試
+    S.test = true;
+    const group = String(params.group || "X").toUpperCase() === "Y" ? "Y" : "X";
+    const seq = String(params.seq || "A").toUpperCase() === "B" ? "B" : "A";
+    const day = Math.min(DAYS, Math.max(1, parseInt(params.day, 10) || 1));
+    S.plan = newPlan(group, seq, day, []);
+    S.completed = day - 1;
+    $("testbar").hidden = false;
+    $("testbar").textContent = "預覽模式：" + group + " 組・序列 " + seq + "・第 " + day + " 天。資料會標成測試，不算進正式紀錄。";
+    return renderStart();
+  }
+
+  let st;
+  try { st = await API.call("getStatus", pid, localDate()); }
+  catch (e) { return message("連不上研究的伺服器", "請檢查網路，然後重新整理這個頁面。", null); }
+
+  if (!st.known) return message("找不到這個編號", "連結裡的編號「" + pid + "」不在研究名單上，請確認是研究團隊給你的那一條連結。", null);
+  if (st.allDone) return message("7 天都完成了", "學習的部分全部做完了，謝謝你！請等研究團隊通知後測的時間。", DAYS);
+  if (st.doneToday) return message("今天已經完成了", "今天的 2 個字已經學過了。明天再打開同一條連結，就會是下一天的內容。", st.completedDays);
+
+  S.plan = newPlan(st.group, st.sequence, st.nextDay, st.learnedCardIds || []);
+  S.completed = st.completedDays;
+  renderStart();
+}
+
+// 今天的計畫：卡片要等受試者選了類別才決定
+function newPlan(group, sequence, day, learned){
+  return { group, sequence, day, learned, first:firstActivityFor(sequence, day), category:"", cards:[] };
+}
+
+const CAT_LABEL = { standup:["脫口秀","Standup"], tvseries:["美劇","American TV series"], lyrics:["歌詞","Lyrics"] };
+const catLabel = id => (CAT_LABEL[id] || [categoryName(id)])[0];
+
+function renderCats(){
+  const rem = remainingByCategory(S.plan.group, S.plan.learned);
+  $("st-cats").innerHTML = CATEGORIES.map(c => {
+    const n = (rem[c.id] || []).length;
+    const [zh, en] = CAT_LABEL[c.id] || [c.name, ""];
+    const sub = n === 0 ? "已經學完了" : "還剩 " + n + " 個字";
+    return '<button type="button" class="cat" role="radio" data-cat="' + c.id + '" aria-checked="' + (S.plan.category === c.id) + '"' +
+      (n === 0 ? " disabled" : "") + "><b>" + esc(zh) + "</b><span>" + esc(en) + "・" + sub + "</span></button>";
+  }).join("");
+}
+
+function chooseCategory(cat){
+  S.plan.category = cat;
+  S.plan.cards = pickCards(S.plan.group, S.plan.learned, cat);
+  renderCats();
+  const extra = S.plan.cards.filter(c => c.category !== cat);
+  $("st-catnote").textContent = extra.length
+    ? "「" + catLabel(cat) + "」只剩 " + (S.plan.cards.length - extra.length) + " 個字，今天會再加 " + extra.length + " 個「" + catLabel(extra[0].category) + "」的字。"
+    : "今天會學 2 個「" + catLabel(cat) + "」的字。";
+  $("go").disabled = S.plan.cards.length === 0;
+}
+$("st-cats").addEventListener("click", e => {
+  const b = e.target.closest(".cat");
+  if (b && !b.disabled) chooseCategory(b.dataset.cat);
+});
+
+function renderStart(){
+  const p = S.plan;
+  renderCats();
+  $("st-eyebrow").textContent = "第 " + p.day + " 天，共 " + DAYS + " 天";
+  renderDays($("st-days"), S.completed, p.day);
+  $("st-order").innerHTML = p.first === "prototype"
+    ? "今天的順序：<b>先做這個</b>，再做 Duolingo。"
+    : "今天的順序：<b>先做 Duolingo</b>，再回來做這個。";
+  $("st-est").textContent = "大約 " + CONFIG.estMinutes + " 分鐘";
+  $("st-contact").textContent = contactText("影片打不開或有其他問題，");
+  show("s-start");
+}
+
+$("go").addEventListener("click", () => {
+  if (!S.plan.cards.length) return;
+  S.idx = 0;
+  S.log = S.plan.cards.map((c, i) => ({ position:i + 1, cardId:c.id, targetWord:c.targetWord,
+    dwellMs:0, flipCount:0, firstFlipMs:null, playCount:0, playMs:0, videoError:"" }));
+  S.startedAtMs = Date.now();
+  S.startedAt = new Date().toISOString();
+  S.unsaved = true;
+  show("s-learn");
+  renderCard(0, true);
+});
+
+/* ═══════════ 學習卡 ═══════════ */
+const now = () => Date.now();
+const exampleForm = c => c.exampleForm || c.targetWord;
+const sentenceForm = c => c.sentenceForm || c.targetWord;
+const frontLine = c => c.sentence ? { text:c.sentence, form:sentenceForm(c) } : { text:c.example, form:exampleForm(c) };
+const fmtClock = s => Math.floor(s / 60) + ":" + String(Math.floor(s % 60)).padStart(2, "0");
+const videoIdOf = c => { const m = /(?:shorts\/|youtu\.be\/|[?&]v=|embed\/)([\w-]{11})/.exec(c.source.url || ""); return m ? m[1] : ""; };
+
+function highlight(sentence, word){
+  const i = sentence.toLowerCase().indexOf(String(word).toLowerCase());
+  if (i < 0) return esc(sentence);
+  return esc(sentence.slice(0, i)) + "<mark>" + esc(sentence.slice(i, i + word.length)) + "</mark>" + esc(sentence.slice(i + word.length));
+}
+
+function commitDwell(){
+  commitPlay();
+  if (!S.shownAt) return;
+  S.log[S.idx].dwellMs += now() - S.shownAt;
+  S.shownAt = 0;
+}
+
+function renderCard(i, first){
+  if (!first) commitDwell();
+  S.idx = i;
+  const c = S.plan.cards[i];
+  const cat = CATEGORIES.find(x => x.id === c.category);
+  const line = frontLine(c);
+
+  $("card").classList.remove("flipped");
+  $("subtitle").innerHTML = highlight(line.text, line.form);
+  $("kicker").textContent = c.sentence ? "片中這句話" : "例句";
+  $("cliplabel").textContent = cat ? cat.name : "";
+  cueClip(c);
+
+  $("b-word").textContent = c.targetWord;
+  $("b-chips").innerHTML = '<span class="chip cefr">' + esc(c.cefr) + '</span><span class="chip">' + esc(c.pos) + "</span>";
+  $("b-def").textContent = c.definitionEn;
+  $("b-defzh").textContent = c.definitionZh;
+  $("b-ex").innerHTML = highlight(c.example, exampleForm(c));
+  $("b-exzh").textContent = c.exampleZh;
+
+  const n = S.plan.cards.length;
+  $("dots").innerHTML = S.plan.cards.map((_, k) => '<i class="' + (k <= i ? "on" : "") + '"></i>').join("");
+  $("deckpos").textContent = "第 " + (i + 1) + " 張，共 " + n + " 張";
+  $("prev").disabled = i === 0;
+  $("next").textContent = i === n - 1 ? "完成今天的學習" : "下一張";
+  S.shownAt = now();
+}
+
+function flip(){
+  const card = $("card");
+  const wasFlipped = card.classList.contains("flipped");
+  card.classList.toggle("flipped");
+  if (!wasFlipped) {
+    stopClip();
+    const e = S.log[S.idx];
+    e.flipCount += 1;
+    if (e.firstFlipMs === null) e.firstFlipMs = now() - S.shownAt;
+  }
+}
+
+$("card").addEventListener("click", flip);
+$("frame").addEventListener("click", e => e.stopPropagation());   // 點影片區不翻卡
+$("prev").addEventListener("click", () => { if (S.idx > 0) renderCard(S.idx - 1); });
+$("next").addEventListener("click", () => {
+  if (S.idx < S.plan.cards.length - 1) renderCard(S.idx + 1);
+  else finish();
+});
+document.addEventListener("keydown", e => {
+  if ($("s-learn").hidden) return;
+  const onControl = e.target instanceof HTMLElement && ["BUTTON","INPUT","TEXTAREA","A"].includes(e.target.tagName);
+  if (e.code === "Space" && !onControl) { e.preventDefault(); flip(); }
+  if (e.key === "ArrowRight" && S.idx < S.plan.cards.length - 1) renderCard(S.idx + 1);
+  if (e.key === "ArrowLeft" && S.idx > 0) renderCard(S.idx - 1);
+});
+
+/* ═══════════ 影片（YouTube IFrame Player API，一個播放器重複使用） ═══════════ */
+const V = { player:null, ready:false, failed:"", playingSince:0, active:false };
+
+function commitPlay(){
+  if (!V.playingSince) return;
+  S.log[S.idx].playMs += now() - V.playingSince;
+  V.playingSince = 0;
+}
+function clipOpts(c){
+  const o = { videoId:videoIdOf(c), startSeconds:c.source.start || 0 };
+  if (c.source.end != null) o.endSeconds = c.source.end;
+  return o;
+}
+function showStill(msg){
+  $("still").hidden = false;
+  $("stillmsg").innerHTML = "<b>這段影片無法播放</b>" + esc(msg) + "<br>請直接翻面看意思，並告訴 " + esc(CONFIG.contactName) + "。";
+}
+function cueClip(c){
+  $("replay").hidden = true;
+  $("still").hidden = true;
+  if (V.failed) { showStill(V.failed); return; }
+  if (!V.ready) return;
+  V.active = false;
+  V.player.cueVideoById(clipOpts(c));
+}
+function onPlayerState(e){
+  const UNSTARTED = -1, ENDED = 0, PLAYING = 1, BUFFERING = 3;
+  const active = e.data === PLAYING || e.data === BUFFERING;
+  if (active && !V.active) S.log[S.idx].playCount += 1;
+  if (active) V.active = true;
+  else if (e.data !== UNSTARTED) V.active = false;   // 開始播時會短暫出現「未開始」，不算新的一次
+  if (e.data === PLAYING) { if (!V.playingSince) V.playingSince = now(); }
+  else commitPlay();
+  $("replay").hidden = e.data !== ENDED;
+}
+function stopClip(){ commitPlay(); if (V.ready) V.player.pauseVideo(); }
+
+$("replaybtn").addEventListener("click", () => {
+  if (!V.ready) return;
+  $("replay").hidden = true;
+  V.player.loadVideoById(clipOpts(S.plan.cards[S.idx]));
+});
+
+window.onYouTubeIframeAPIReady = () => {
+  V.player = new YT.Player("player", {
+    host:"https://www.youtube-nocookie.com",
+    playerVars:{ playsinline:1, rel:0, fs:0, iv_load_policy:3, cc_load_policy:0 },
+    events:{
+      onReady:() => { V.ready = true; if (!$("s-learn").hidden) cueClip(S.plan.cards[S.idx]); },
+      onStateChange:onPlayerState,
+      onError:e => {
+        commitPlay();
+        if (S.log[S.idx]) S.log[S.idx].videoError = String(e.data);
+        showStill((e.data === 101 || e.data === 150) ? "（版權方不允許在這裡播放，錯誤 " + e.data + "）" : "（錯誤 " + e.data + "）");
+      }
+    }
+  });
+};
+(function loadYouTube(){
+  const tag = document.createElement("script");
+  tag.src = "https://www.youtube.com/iframe_api";
+  tag.onerror = () => {
+    V.failed = "（連不上 YouTube）";
+    if (!$("s-learn").hidden) { S.log[S.idx].videoError = "api"; showStill(V.failed); }
+  };
+  document.head.appendChild(tag);
+})();
+
+/* ═══════════ 完成與送出 ═══════════ */
+function finish(){
+  stopClip();
+  commitDwell();
+  const endMs = now();
+  S.record = {
+    sessionId: S.pid + "-" + endMs.toString(36) + "-" + Math.random().toString(36).slice(2, 6),
+    participantId: S.pid, isTest: S.test,
+    day: S.plan.day, group: S.plan.group, sequence: S.plan.sequence, firstActivity: S.plan.first,
+    chosenCategory: S.plan.category,
+    localDate: localDate(), timezone: timeZone(),
+    startedAt: S.startedAt, endedAt: new Date(endMs).toISOString(), durationMs: endMs - S.startedAtMs,
+    userAgent: navigator.userAgent, screen: screen.width + "x" + screen.height + " / " + innerWidth + "x" + innerHeight,
+    pageOrigin: location.origin,
+    cards: S.log
+  };
+  addPending(S.record);   // 先存一份在這台電腦，送出成功再刪掉
+
+  $("done-time").textContent = "今天花了 " + fmtDuration(S.record.durationMs) + "。";
+  $("done-next").textContent = S.plan.first === "prototype"
+    ? "下一步：填今天的回饋表單（選「Prototype」），然後做 Duolingo。"
+    : "下一步：填今天的回饋表單（選「Prototype」）。今天的兩段都完成了，謝謝！";
+  const formUrl = feedbackUrl();
+  $("done-form").hidden = !formUrl;
+  if (formUrl) $("done-form").href = formUrl;
+  show("s-done");
+  submit();
+}
+
+function feedbackUrl(){
+  if (!CONFIG.feedbackFormUrl) return "";
+  try {
+    const u = new URL(CONFIG.feedbackFormUrl);
+    const f = CONFIG.feedbackPrefill || {};
+    const key = k => /^entry\./.test(k) ? k : "entry." + k;
+    if (f.participantEntry || f.sessionEntry) u.searchParams.set("usp", "pp_url");
+    if (f.participantEntry) u.searchParams.set(key(f.participantEntry), S.pid);
+    if (f.sessionEntry) u.searchParams.set(key(f.sessionEntry), f.sessionValue || "Prototype");
+    return u.toString();
+  } catch (e) { return CONFIG.feedbackFormUrl; }
+}
+
+async function submit(){
+  $("done-status").className = "sent wait";
+  $("done-status").textContent = "正在送出紀錄…";
+  $("failbox").hidden = true;
+  $("retry").disabled = true;
+  try {
+    await API.call("submitSession", S.record);
+    dropPending(S.record.sessionId);
+    S.unsaved = false;
+    $("done-status").className = "sent ok";
+    $("done-status").textContent = "紀錄已送出";
+  } catch (e) {
+    $("done-status").className = "sent no";
+    $("done-status").textContent = "紀錄還沒送出";
+    $("failmsg").textContent = "可能是網路不穩。請按「重試」。如果一直失敗，請下載備份檔傳給 " + CONFIG.contactName +
+      "。紀錄也先存在這台電腦裡，下次打開連結時會自動補送。";
+    $("dump").value = JSON.stringify(S.record);
+    $("failbox").hidden = false;
+  } finally {
+    $("retry").disabled = false;
+  }
+}
+$("retry").addEventListener("click", submit);
+$("backup").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(S.record, null, 2)], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = S.record.sessionId + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+});
+$("dump").addEventListener("focus", e => e.target.select());
+
+window.addEventListener("beforeunload", e => {
+  if (!S.unsaved) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
+boot();
+</script>
+</body>
+</html>

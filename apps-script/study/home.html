@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec 單字學習研究</title>
+<style>
+  :root{
+    --ink:#16202A; --ink2:#38434F; --muted:#5A6570; --paper:#ECEFEA; --surface:#FFFFFF; --line:#D3D9D2;
+    --caption:#E8B33C; --staff:#2E5A7A; --no:#A33B32;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .app{max-width:640px;margin:0 auto;padding:22px 20px 80px}
+  [hidden]{display:none !important}
+  [data-raw] .app{display:none}
+  .topbar{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:32px}
+  .brand{margin:0;font-size:17px;font-weight:600}
+  h1{font-size:26px;line-height:1.35;margin:0 0 8px;font-weight:600}
+  .lede{margin:0 0 24px;color:var(--ink2);font-size:17px}
+
+  .roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:18px 18px 16px;min-height:120px;text-align:left;font:inherit;cursor:pointer;
+    background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:4px;text-decoration:none}
+  .role b{font-size:20px;font-weight:600}
+  .role span{font-size:15px;color:var(--muted)}
+  .role:hover{border-color:var(--ink2)}
+  .role.p{border-top:3px solid var(--caption)}
+  .role.s{border-top:3px solid var(--staff)}
+  input[type=password]{text-transform:none;letter-spacing:normal}
+  .role[aria-expanded=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+  .role:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  form{margin-top:20px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;gap:10px}
+  label{font-size:15px;font-weight:600}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input{flex:1;min-width:140px;font:inherit;font-size:18px;letter-spacing:.04em;padding:10px 12px;border:1px solid var(--line);border-radius:3px;color:var(--ink);background:var(--surface);text-transform:uppercase}
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;font:inherit;font-size:17px;font-weight:600;padding:10px 24px;border-radius:3px;cursor:pointer;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+  .hint{margin:0;font-size:15px;color:var(--muted)}
+  .err{margin:0;font-size:15px;color:var(--no)}
+
+  @media (max-width:520px){ .roles{grid-template-columns:minmax(0,1fr)} .role{min-height:0} }
+</style>
+<?!= include('config'); ?>
+<?!= include('cards'); ?>
+<?!= include('common'); ?>
+</head>
+<body>
+<script>
+// 直接打開原始檔時，include 不會展開、CONFIG 不存在：顯示說明，不要給一個按了沒反應的頁面
+if (typeof CONFIG === "undefined") {
+  document.documentElement.setAttribute("data-raw", "");
+  document.write('<p style="font-family:sans-serif;font-size:16px;line-height:1.6;padding:24px;max-width:580px">這是原始檔，不能直接打開。' +
+    '本機預覽請在終端機執行 <code>node apps-script/study/dev/server.mjs</code>，再打開 <a href="http://localhost:8100/">http://localhost:8100/</a>；' +
+    '正式使用請部署到 Apps Script（見 DEPLOY.md）。</p>');
+}
+</script>
+<div class="app">
+  <header class="topbar"><p class="brand">Spec 單字學習研究</p></header>
+
+  <h1>你是哪一位？</h1>
+  <p class="lede">請選擇你的身份。</p>
+
+  <div class="roles">
+    <button type="button" class="role p" id="as-participant" aria-expanded="false" aria-controls="pform">
+      <b>我是受試者</b>
+      <span>參加研究、每天學 2 個單字</span>
+    </button>
+    <button type="button" class="role s" id="as-staff" aria-expanded="false" aria-controls="sform">
+      <b>我是施測者</b>
+      <span>研究團隊成員，輸入施測者密碼</span>
+    </button>
+  </div>
+
+  <form id="pform" hidden novalidate>
+    <label for="pid">你的編號</label>
+    <div class="row">
+      <input id="pid" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="P01">
+      <button class="btn" type="submit">進入</button>
+    </div>
+    <p class="err" id="err" role="alert"></p>
+    <p class="hint">編號在研究團隊傳給你的訊息裡。進入後可以把那一頁加到書籤，之後每天直接打開。</p>
+  </form>
+
+  <form id="sform" hidden novalidate>
+    <label for="pw">施測者密碼</label>
+    <div class="row">
+      <input id="pw" type="password" autocomplete="current-password">
+      <button class="btn" type="submit" id="sbtn">進入</button>
+    </div>
+    <p class="err" id="serr" role="alert"></p>
+    <p class="hint">密碼請向研究團隊索取。</p>
+  </form>
+</div>
+
+<script>
+// 這次部署的網址（Apps Script 由伺服器填入；本機預覽是空的，改用 /participant 和 /staff）
+const BASE = "<?= baseUrl ?>";
+const participantBase = CONFIG.participantUrl || BASE || "/participant";
+const staffBase = BASE ? BASE + "?view=staff" : "/staff";
+const go = url => window.open(url, "_top");
+
+// 兩個身份各自展開自己的表單，一次只開一個
+const PANELS = { "as-participant":"pform", "as-staff":"sform" };
+function openPanel(btnId){
+  Object.entries(PANELS).forEach(([b, f]) => {
+    const open = b === btnId && $(f).hidden;
+    $(f).hidden = !open;
+    $(b).setAttribute("aria-expanded", String(open));
+    if (open) $(f).querySelector("input").focus();
+  });
+}
+Object.keys(PANELS).forEach(id => $(id).addEventListener("click", () => openPanel(id)));
+
+$("pid").addEventListener("input", () => { $("err").textContent = ""; });
+$("pw").addEventListener("input", () => { $("serr").textContent = ""; });
+
+$("pform").addEventListener("submit", e => {
+  e.preventDefault();
+  const pid = $("pid").value.trim().toUpperCase();
+  if (!pid) { $("err").textContent = "請輸入編號。"; return $("pid").focus(); }
+  if (!CONFIG.participants[pid]) {
+    $("err").textContent = "找不到「" + pid + "」這個編號，請確認研究團隊給你的編號。";
+    return $("pid").focus();
+  }
+  go(participantBase + (participantBase.includes("?") ? "&" : "?") + "p=" + encodeURIComponent(pid));
+});
+
+// 密碼在伺服器端檢查；對了就把通行碼存在這個分頁，施測者頁讀得到就不用再輸入一次
+$("sform").addEventListener("submit", async e => {
+  e.preventDefault();
+  const pw = $("pw").value;
+  if (!pw) { $("serr").textContent = "請輸入密碼。"; return $("pw").focus(); }
+  $("sbtn").disabled = true;
+  try {
+    const r = await API.call("verifyStaff", pw);
+    try { sessionStorage.setItem("spec-staff-token", r.token); } catch (err) {}
+    go(staffBase);
+  } catch (err) {
+    $("serr").textContent = (err && err.message) ? err.message : String(err);
+    $("pw").select();
+  } finally {
+    $("sbtn").disabled = false;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>施測者 · Spec</title>
+<style>
+  :root{
+    --ink:#16202A; --ink2:#38434F; --muted:#5A6570; --paper:#ECEFEA; --surface:#FFFFFF; --sunk:#E2E7E1; --line:#D3D9D2;
+    --staff:#2E5A7A; --staff-bg:#E3EDF4; --caption:#E8B33C; --ok:#2F6B4F; --ok-bg:#E3F0E8; --no:#A33B32; --no-bg:#FBEFEE; --warn:#8A5A12; --warn-bg:#FBF1DC;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+  .app{max-width:1040px;margin:0 auto;padding:20px 20px 80px;display:flex;flex-direction:column;gap:36px}
+  [hidden]{display:none !important}
+  [data-raw] .app{display:none}
+  h1{margin:0;font-size:22px}
+  h2{margin:0;font-size:19px}
+  p{margin:0}
+  a{color:var(--staff)}
+  code{font-family:var(--mono);font-size:13px;background:var(--sunk);padding:1px 5px;border-radius:3px}
+  .muted{color:var(--muted)}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px}
+  .top .who{font-size:14px;color:var(--muted)}
+  nav{display:flex;gap:14px;flex-wrap:wrap;font-size:15px}
+  section{display:flex;flex-direction:column;gap:14px}
+  .sechead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;border-top:2px solid var(--ink);padding-top:10px}
+  .btn{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;min-height:38px;border-radius:3px;cursor:pointer;background:var(--ink);color:#fff;border:1px solid var(--ink);text-decoration:none;display:inline-flex;align-items:center}
+  .btn.ghost{background:var(--surface);color:var(--ink2);border-color:var(--line);font-weight:500}
+  .btn:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink)}
+
+  #main{display:flex;flex-direction:column;gap:36px}
+  .login{max-width:420px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px;display:flex;flex-direction:column;gap:10px}
+  .login label{font-weight:600}
+  .login .row{display:flex;gap:10px;flex-wrap:wrap}
+  .login input{flex:1;min-width:160px;font:inherit;font-size:16px;padding:9px 12px;border:1px solid var(--line);border-radius:3px;background:var(--surface);color:var(--ink)}
+  .login input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .err{color:var(--no);font-size:14px;min-height:1.4em}
+  .notice{border-radius:4px;padding:12px 14px;font-size:14px}
+  .notice ul{margin:4px 0 0;padding-left:18px}
+  .notice.err{background:var(--no-bg);border:1px solid #E3C3BF}
+  .notice.warn{background:var(--warn-bg);border:1px solid #E7CF95}
+
+  .tscroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{text-align:left;vertical-align:top;padding:8px 10px;border-top:1px solid var(--line);white-space:nowrap}
+  thead th{border-top:0;background:var(--sunk);font-weight:600;font-size:13px}
+  td.day{min-width:78px}
+  .cell{display:flex;flex-direction:column;gap:1px;border-radius:3px;padding:4px 6px;font-size:13px;line-height:1.35}
+  .cell.done{background:var(--ok-bg);color:var(--ok)}
+  .cell.done.flagged{background:var(--warn-bg);color:var(--warn)}
+  .cell.next{border:1px dashed var(--staff);color:var(--staff)}
+  .cell.later{color:var(--line)}
+  .pill{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}
+  .pill.no{background:var(--no-bg);color:var(--no)}
+  .pill.mute{background:var(--sunk);color:var(--muted)}
+  .rowbtn{background:none;border:0;padding:0;font:inherit;color:var(--staff);cursor:pointer;text-decoration:underline}
+
+  .detail td{background:#F8FAF7;white-space:normal}
+  .detail table{background:var(--surface);border:1px solid var(--line);margin-top:6px}
+
+  .msgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .msg{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .msg h3{margin:0;font-size:15px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .msg textarea{width:100%;min-height:118px;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:3px;padding:8px;background:#F8FAF7;color:var(--ink);resize:vertical}
+  .msg .actions{display:flex;gap:8px;align-items:center}
+  .copied{font-size:13px;color:var(--ok)}
+
+  .preview{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px 14px}
+  .preview label{font-size:14px;color:var(--ink2);display:flex;gap:6px;align-items:center}
+  .plan td{white-space:normal}
+
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .danger{border:1px solid #E3C3BF;background:var(--no-bg);border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;margin-top:8px}
+  .danger h3{margin:0;color:var(--no);font-size:16px}
+  .danger .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .danger label{font-size:14px;color:var(--ink2);display:flex;gap:6px;align-items:center}
+  .btn.danger-out{background:var(--surface);color:var(--no);border-color:var(--no)}
+  .btn.danger-solid{background:var(--no);border-color:var(--no);color:#fff}
+  .confirm{background:var(--surface);border:1px solid #E3C3BF;border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .confirm .warn{color:var(--no);font-weight:600}
+  .confirm input{font:inherit;font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:3px;min-width:180px}
+  .confirm input:focus-visible{outline:2px solid var(--no);outline-offset:2px}
+  .okmsg{color:var(--ok);font-size:14px;margin:0}
+  .stats{display:flex;gap:10px;flex-wrap:wrap}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:10px 14px;min-width:140px}
+  .stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+  .stat span{font-size:13px;color:var(--muted)}
+</style>
+<?!= include('config'); ?>
+<?!= include('cards'); ?>
+<?!= include('common'); ?>
+</head>
+<body>
+<script>
+// 直接打開原始檔時，include 不會展開、CONFIG 不存在：顯示說明，不要給一個按了沒反應的頁面
+if (typeof CONFIG === "undefined") {
+  document.documentElement.setAttribute("data-raw", "");
+  document.write('<p style="font-family:sans-serif;font-size:16px;line-height:1.6;padding:24px;max-width:580px">這是原始檔，不能直接打開。' +
+    '本機預覽請在終端機執行 <code>node apps-script/study/dev/server.mjs</code>，再打開 <a href="http://localhost:8100/">http://localhost:8100/</a>；' +
+    '正式使用請部署到 Apps Script（見 DEPLOY.md）。</p>');
+}
+</script>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>施測者 · Spec</h1>
+      <p class="who" id="who">載入中…</p>
+    </div>
+    <nav id="nav" hidden>
+      <a href="#progress" target="_self">進度</a>
+      <a href="#messages" target="_self">訊息</a>
+      <a href="#preview" target="_self">預覽</a>
+      <a href="#data" target="_self">資料</a>
+      <button class="btn ghost" id="reload">重新整理</button>
+      <button class="btn ghost" id="logout">登出</button>
+    </nav>
+  </header>
+
+  <form class="login" id="login" hidden novalidate>
+    <label for="pw">施測者密碼</label>
+    <div class="row">
+      <input id="pw" type="password" autocomplete="current-password">
+      <button class="btn" type="submit" id="loginbtn">進入</button>
+    </div>
+    <p class="err" id="loginerr" role="alert"></p>
+    <p class="muted">密碼請向研究團隊索取。登入後這個分頁 6 小時內不用再輸入。</p>
+  </form>
+
+  <div id="main" hidden>
+  <div id="cfgbox"></div>
+
+  <section id="progress">
+    <div class="sechead"><h2>進度</h2><span class="muted" id="asof"></span></div>
+    <p class="muted">只算正式紀錄（不含 TEST 和同一天重複做的）。「今天」是依受試者最後一次紀錄的時區算的當地日期。</p>
+    <div class="tscroll"><table id="grid"></table></div>
+  </section>
+
+  <section id="messages">
+    <div class="sechead"><h2>訊息</h2>
+      <label class="muted">類型
+        <select id="msgkind">
+          <option value="daily">每天早上的提醒</option>
+          <option value="link">第一次發連結（只發一次）</option>
+        </select>
+      </label>
+    </div>
+    <p class="muted">每天的提醒依各自的進度產生「第幾天」和「先做哪一段」。請在受試者當地的早上傳。</p>
+    <div class="msgs" id="msgs"></div>
+  </section>
+
+  <section id="preview">
+    <div class="sechead"><h2>預覽</h2></div>
+    <p class="muted">用 <code>TEST</code> 編號打開受試者頁，任何一天、任何組別都可以試。預覽時當作還沒學過任何字，三個類別都能選。資料會標成測試，不算進進度。</p>
+    <p class="muted">下表是每組在 Prototype 學的 14 個字，依類別分開。受試者每天選一類，程式依表上的順序挑字。</p>
+    <div class="preview">
+      <label>組別 <select id="pv-group"><option>X</option><option>Y</option></select></label>
+      <label>序列 <select id="pv-seq"><option>A</option><option>B</option></select></label>
+      <label>第幾天 <select id="pv-day"></select></label>
+      <a class="btn" id="pv-open" target="_blank" rel="noopener">打開預覽</a>
+    </div>
+    <div class="tscroll"><table class="plan" id="plan"></table></div>
+  </section>
+
+  <section id="data">
+    <div class="sechead"><h2>資料</h2></div>
+    <div class="stats" id="stats"></div>
+    <p>完整資料在 <a id="sheetlink" target="_blank" rel="noopener">Google 試算表</a>：</p>
+    <ul style="margin:0;padding-left:20px">
+      <li><code>Sessions</code>：每次學習一列（第幾天、當地日期、時區、花了多久、flag）。</li>
+      <li><code>Cards</code>：每張卡一列（停留時間、翻面次數、播放次數和時間、影片錯誤代碼）。</li>
+      <li><code>chosenCategory</code>：受試者那天選的影片類別。</li>
+      <li><code>flag</code>：<code>duplicate</code> 是同一天做第二次（不算進度）；<code>day-mismatch</code> 是頁面顯示的天數和伺服器算的不同；<code>card-mismatch</code> 是送來的字不屬於這組，或已經學過。</li>
+      <li>要分析時用試算表的「檔案 → 下載 → CSV」，或直接複製到 Jay 的 workbook。</li>
+    </ul>
+
+    <div class="danger" id="danger">
+      <h3>清除資料</h3>
+      <p class="muted">刪除前，伺服器會先把 <code>Sessions</code> 和 <code>Cards</code> 整份複製成「備份」分頁。誤刪時，可以從試算表把備份貼回來。</p>
+      <div class="row">
+        <label>範圍
+          <select id="clr-scope">
+            <option value="test">只清除測試資料（TEST）</option>
+            <option value="participant">某位受試者的全部紀錄</option>
+            <option value="all">全部資料（所有受試者）</option>
+          </select>
+        </label>
+        <label id="clr-pid-wrap" hidden>受試者 <select id="clr-pid"></select></label>
+        <button class="btn danger-out" id="clr-start">清除…</button>
+      </div>
+      <div class="confirm" id="clr-confirm" hidden>
+        <p id="clr-summary"></p>
+        <label for="clr-text" id="clr-label"></label>
+        <div class="row">
+          <input id="clr-text" autocomplete="off" spellcheck="false">
+          <button class="btn danger-solid" id="clr-go" disabled>確定刪除</button>
+          <button class="btn ghost" id="clr-cancel">取消</button>
+        </div>
+        <p class="err" id="clr-err" role="alert"></p>
+      </div>
+      <p class="okmsg" id="clr-result" role="status"></p>
+    </div>
+  </section>
+  </div>
+</div>
+
+<script>
+let DATA = null;
+const PIDS = Object.keys(CONFIG.participants);
+const isReal = s => s.isTest !== true && String(s.isTest).toUpperCase() !== "TRUE" && s.flag !== "duplicate";
+const ACT = { prototype:"Prototype", duolingo:"Duolingo" };
+const CAT_SHORT = { standup:"脫口秀", tvseries:"美劇", lyrics:"歌詞" };
+
+function participantLink(pid){
+  const base = CONFIG.participantUrl || (API.mode === "mock" ? location.origin + "/participant" : "");
+  return base ? base + (base.includes("?") ? "&" : "?") + "p=" + encodeURIComponent(pid) : "";
+}
+const shortDate = d => d ? String(d).slice(5).replace("-", "/") : "";
+
+function summarize(pid){
+  const p = CONFIG.participants[pid];
+  const all = DATA.sessions.filter(s => s.participantId === pid);
+  const real = all.filter(isReal).sort((a, b) => String(a.receivedAt).localeCompare(String(b.receivedAt)));
+  const tz = (all.length ? all[all.length - 1].timezone : "") || "";
+  const today = tz ? localDate(new Date(), tz) : "";
+  const byDay = new Map(real.map(s => [Number(s.day), s]));
+  return { pid, p, all, real, tz, today, byDay,
+    completed: real.length, nextDay: Math.min(real.length + 1, DAYS + 1),
+    doneToday: !!today && real.some(s => String(s.localDate) === today),
+    dupes: all.filter(s => s.flag === "duplicate").length };
+}
+function cardsOf(sessionId){ return DATA.cards.filter(c => c.sessionId === sessionId).sort((a, b) => a.position - b.position); }
+function hasVideoError(sessionId){ return cardsOf(sessionId).some(c => c.videoError !== "" && c.videoError != null); }
+
+/* ── 設定檢查 ── */
+function renderConfigCheck(){
+  const { errs, warns } = checkConfig();
+  $("cfgbox").innerHTML =
+    (errs.length ? '<div class="notice err"><b>設定有錯，受試者頁不能用：</b><ul>' + errs.map(e => "<li>" + esc(e) + "</li>").join("") + "</ul></div>" : "") +
+    (warns.length ? '<div class="notice warn" style="margin-top:8px"><b>設定還沒填完：</b><ul>' + warns.map(e => "<li>" + esc(e) + "</li>").join("") + "</ul></div>" : "");
+}
+
+/* ── 進度 ── */
+let openPid = "";
+function renderGrid(){
+  const head = "<thead><tr><th>受試者</th><th>組別・序列</th>" +
+    Array.from({ length:DAYS }, (_, i) => "<th>第 " + (i + 1) + " 天</th>").join("") + "<th>今天</th><th></th></tr></thead>";
+  const rows = PIDS.map(pid => {
+    const r = summarize(pid);
+    const cells = Array.from({ length:DAYS }, (_, i) => {
+      const d = i + 1, s = r.byDay.get(d);
+      if (s) {
+        const notes = [];
+        if (s.flag) notes.push(s.flag);
+        if (hasVideoError(s.sessionId)) notes.push("影片錯誤");
+        return '<td class="day"><span class="cell done' + (notes.length ? " flagged" : "") + '"><b>' + shortDate(s.localDate) + "</b>" +
+          (s.chosenCategory ? "<span>" + esc(CAT_SHORT[s.chosenCategory] || s.chosenCategory) + "</span>" : "") +
+          fmtDuration(Number(s.durationMs) || 0) + (notes.length ? "<span>" + esc(notes.join("、")) + "</span>" : "") + "</span></td>";
+      }
+      if (d === r.nextDay) return '<td class="day"><span class="cell next">下一個</span></td>';
+      return '<td class="day"><span class="cell later">—</span></td>';
+    }).join("");
+    const todayPill = r.completed >= DAYS ? '<span class="pill ok">7 天完成</span>'
+      : !r.real.length ? '<span class="pill mute">還沒開始</span>'
+      : r.doneToday ? '<span class="pill ok">今天已做</span>' : '<span class="pill no">今天還沒做</span>';
+    const tzNote = r.tz ? '<div class="muted" style="font-size:12px">' + esc(r.tz) + "・" + esc(shortDate(r.today)) + "</div>" : "";
+    const row = "<tr><td><b>" + pid + "</b></td><td>" + r.p.group + "・" + r.p.sequence + "</td>" + cells +
+      "<td>" + todayPill + tzNote + '</td><td><button class="rowbtn" data-pid="' + pid + '">' + (openPid === pid ? "收起" : "細節") + "</button></td></tr>";
+    return row + (openPid === pid ? detailRow(r) : "");
+  }).join("");
+  $("grid").innerHTML = head + "<tbody>" + rows + "</tbody>";
+}
+function detailRow(r){
+  if (!r.all.length) return '<tr class="detail"><td colspan="' + (DAYS + 4) + '" class="muted">還沒有紀錄。</td></tr>';
+  const list = r.all.map(s => {
+    const cards = cardsOf(s.sessionId).map(c =>
+      "<tr><td>" + c.position + "</td><td>" + esc(c.targetWord) + "</td><td>" + fmtDuration(Number(c.dwellMs) || 0) + "</td><td>" + c.flipCount +
+      "</td><td>" + c.playCount + "</td><td>" + fmtDuration(Number(c.playMs) || 0) + "</td><td>" + esc(c.videoError || "") + "</td></tr>").join("");
+    const test = String(s.isTest).toUpperCase() === "TRUE" || s.isTest === true;
+    return '<div style="margin:6px 0 14px"><b>第 ' + s.day + " 天</b>　" + (s.chosenCategory ? "選了「" + esc(CAT_SHORT[s.chosenCategory] || s.chosenCategory) + "」　" : "") + esc(s.localDate) + "　" + esc(s.timezone) + "　" + fmtDuration(Number(s.durationMs) || 0) +
+      (s.flag ? '　<span class="pill no">' + esc(s.flag) + "</span>" : "") + (test ? '　<span class="pill mute">TEST</span>' : "") +
+      "<table><thead><tr><th>#</th><th>字</th><th>停留</th><th>翻面</th><th>播放次數</th><th>播放時間</th><th>影片錯誤</th></tr></thead><tbody>" + cards + "</tbody></table></div>";
+  }).join("");
+  return '<tr class="detail"><td colspan="' + (DAYS + 4) + '">' + list + "</td></tr>";
+}
+$("grid").addEventListener("click", e => {
+  const b = e.target.closest("[data-pid]"); if (!b) return;
+  openPid = openPid === b.dataset.pid ? "" : b.dataset.pid;
+  renderGrid();
+});
+
+/* ── 訊息 ── */
+function messageFor(pid, kind){
+  const r = summarize(pid);
+  const link = participantLink(pid) || "（請先在 config 填 participantUrl）";
+  if (kind === "link") {
+    return "嗨 " + pid + "，這是你接下來 7 天學單字用的連結，請加到書籤：" + link +
+      "\n每天打開同一條就好，網頁會自動帶到當天的內容。影片打不開的話請告訴我。";
+  }
+  if (r.completed >= DAYS) return "";
+  const f = firstActivityFor(r.p.sequence, r.nextDay);
+  const first = ACT[f], second = f === "prototype" ? ACT.duolingo : ACT.prototype;
+  return "嗨 " + pid + "，今天是第 " + r.nextDay + " 天！今天請做兩段：1) 先做 " + first + "，2) 再做 " + second + "。" +
+    "Prototype 請打開之前給你的連結：" + link + "（做完會自動送出，不用下載檔案）。" +
+    "Duolingo 請截圖完成畫面。每一段做完都要填這個表單（選是哪一段）：" + (CONFIG.feedbackFormUrl || "（回饋表單連結）") + "。謝謝！";
+}
+function renderMessages(){
+  const kind = $("msgkind").value;
+  $("msgs").innerHTML = PIDS.map(pid => {
+    const r = summarize(pid);
+    const text = messageFor(pid, kind);
+    const meta = kind === "link" ? "" : r.completed >= DAYS ? "7 天都完成了" : "第 " + r.nextDay + " 天" + (r.doneToday ? "・今天已做" : "");
+    return '<div class="msg"><h3><span>' + pid + '</span><span class="muted" style="font-weight:400">' + esc(meta) + "</span></h3>" +
+      (text ? '<textarea readonly id="m-' + pid + '">' + esc(text) + '</textarea><div class="actions"><button class="btn ghost" data-copy="' + pid + '">複製</button><span class="copied" id="c-' + pid + '"></span></div>'
+            : '<p class="muted">不用再傳每天的提醒。</p>') + "</div>";
+  }).join("");
+}
+$("msgkind").addEventListener("change", renderMessages);
+$("msgs").addEventListener("click", async e => {
+  const b = e.target.closest("[data-copy]"); if (!b) return;
+  const ta = $("m-" + b.dataset.copy), out = $("c-" + b.dataset.copy);
+  try { await navigator.clipboard.writeText(ta.value); out.textContent = "已複製"; }
+  catch (err) {
+    ta.focus(); ta.select();
+    out.textContent = document.execCommand && document.execCommand("copy") ? "已複製" : "已選取，請按 Ctrl/Cmd + C";
+  }
+  setTimeout(() => { out.textContent = ""; }, 2500);
+});
+
+/* ── 預覽 ── */
+$("pv-day").innerHTML = Array.from({ length:DAYS }, (_, i) => "<option>" + (i + 1) + "</option>").join("");
+function updatePreview(){
+  const g = $("pv-group").value, q = $("pv-seq").value, d = $("pv-day").value;
+  const base = participantLink("TEST");
+  $("pv-open").hidden = !base;
+  if (base) $("pv-open").href = base + "&group=" + g + "&seq=" + q + "&day=" + d;
+}
+["pv-group","pv-seq","pv-day"].forEach(id => $(id).addEventListener("change", updatePreview));
+function renderPlan(){
+  const word = id => { const c = CARD_BY_ID.get(id); return c ? esc(c.targetWord) : esc(id); };
+  $("plan").innerHTML = "<thead><tr><th>組別</th>" + CATEGORIES.map(c => "<th>" + esc(CAT_SHORT[c.id] || c.name) + "</th>").join("") + "</tr></thead><tbody>" +
+    Object.keys(CONFIG.words).map(g => {
+      const rem = remainingByCategory(g, []);
+      const who = PIDS.filter(p => CONFIG.participants[p].group === g).join("、");
+      return '<tr><td><b>' + g + ' 組</b><div class="muted" style="font-size:12px">' + esc(who) + "</div></td>" +
+        CATEGORIES.map(c => "<td>" + rem[c.id].length + " 個<br>" + rem[c.id].map(word).join("<br>") + "</td>").join("") + "</tr>";
+    }).join("") + "</tbody>";
+}
+
+/* ── 資料 ── */
+function renderData(){
+  const real = DATA.sessions.filter(isReal).length;
+  const test = DATA.sessions.filter(s => s.isTest === true || String(s.isTest).toUpperCase() === "TRUE").length;
+  const dup = DATA.sessions.filter(s => s.flag === "duplicate").length;
+  const vidErr = DATA.cards.filter(c => c.videoError !== "" && c.videoError != null).length;
+  const stat = (n, t) => '<div class="stat"><b>' + n + "</b><span>" + t + "</span></div>";
+  $("stats").innerHTML = stat(real + " / " + PIDS.length * DAYS, "正式紀錄") + stat(test, "測試紀錄") + stat(dup, "同一天重複") + stat(vidErr, "影片錯誤（張）");
+  $("sheetlink").href = DATA.sheetUrl || "#";
+}
+
+/* ── 清除資料：選範圍 → 看會刪多少 → 輸入確認文字 → 伺服器再檢查一次並先備份 ── */
+const CLEAR_PHRASE = { test:"刪除", participant:"刪除", all:"刪除全部" };
+$("clr-pid").innerHTML = PIDS.map(p => "<option>" + p + "</option>").join("");
+const isTestRow = r => r.isTest === true || String(r.isTest).toUpperCase() === "TRUE";
+function clearMatch(scope, pid){
+  return r => scope === "all" || (scope === "test" ? isTestRow(r) : r.participantId === pid);
+}
+function resetClear(keepResult){
+  $("clr-confirm").hidden = true;
+  $("clr-text").value = "";
+  $("clr-err").textContent = "";
+  $("clr-go").disabled = true;
+  $("clr-start").disabled = false;
+  $("clr-scope").disabled = false;
+  $("clr-pid").disabled = false;
+  if (!keepResult) $("clr-result").textContent = "";
+}
+$("clr-scope").addEventListener("change", () => {
+  $("clr-pid-wrap").hidden = $("clr-scope").value !== "participant";
+  resetClear();
+});
+$("clr-pid").addEventListener("change", () => resetClear());
+$("clr-start").addEventListener("click", () => {
+  if (!DATA) return;
+  const scope = $("clr-scope").value, pid = $("clr-pid").value;
+  const m = clearMatch(scope, pid);
+  const nS = DATA.sessions.filter(m).length, nC = DATA.cards.filter(m).length;
+  $("clr-result").textContent = "";
+  if (!nS && !nC) { $("clr-result").textContent = "沒有符合這個範圍的資料，不用清除。"; return; }
+  const what = scope === "test" ? "所有測試資料（TEST）" : scope === "participant" ? pid + " 的全部紀錄" : "所有受試者的全部資料";
+  const realN = DATA.sessions.filter(m).filter(s => !isTestRow(s)).length;
+  $("clr-summary").innerHTML = "即將刪除<b>" + esc(what) + "</b>：" + nS + " 筆學習紀錄、" + nC + " 筆卡片紀錄。" +
+    (realN ? '<br><span class="warn">其中有 ' + realN + " 筆是正式紀錄，刪除後進度會跟著改變。</span>" : "");
+  $("clr-label").textContent = "確定要刪除的話，請輸入「" + CLEAR_PHRASE[scope] + "」：";
+  $("clr-confirm").hidden = false;
+  $("clr-start").disabled = true;
+  $("clr-scope").disabled = true;
+  $("clr-pid").disabled = true;
+  $("clr-text").focus();
+});
+$("clr-text").addEventListener("input", () => {
+  $("clr-err").textContent = "";
+  $("clr-go").disabled = $("clr-text").value.trim() !== CLEAR_PHRASE[$("clr-scope").value];
+});
+$("clr-cancel").addEventListener("click", () => resetClear());
+$("clr-go").addEventListener("click", async () => {
+  const scope = $("clr-scope").value, pid = $("clr-pid").value;
+  $("clr-go").disabled = true; $("clr-cancel").disabled = true;
+  try {
+    const r = await API.call("clearData", TOKEN, scope, scope === "participant" ? pid : "", $("clr-text").value);
+    resetClear();
+    $("clr-result").textContent = "已刪除 " + r.sessions + " 筆學習紀錄、" + r.cards + " 筆卡片紀錄。" +
+      (r.backups && r.backups.length ? "備份在試算表的「" + r.backups.join("」「") + "」分頁。" : "");
+    await load();
+  } catch (e) {
+    if (/密碼/.test(errText(e))) { TOKEN = ""; saveToken(""); return showLogin("登入已過期，請重新輸入密碼。"); }
+    $("clr-err").textContent = errText(e);
+    $("clr-go").disabled = false;
+  } finally {
+    $("clr-cancel").disabled = false;
+  }
+});
+
+/* ── 密碼登入：通行碼存在這個分頁（sessionStorage），關掉分頁就要重新輸入 ── */
+const TOKEN_KEY = "spec-staff-token";
+const readToken = () => { try { return sessionStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; } };
+const saveToken = t => { try { t ? sessionStorage.setItem(TOKEN_KEY, t) : sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} };
+let TOKEN = readToken();
+const errText = e => (e && e.message) ? e.message : String(e);
+
+function showLogin(msg){
+  $("main").hidden = true; $("nav").hidden = true; $("login").hidden = false;
+  $("who").textContent = "請輸入施測者密碼";
+  $("loginerr").textContent = msg || "";
+  $("pw").value = "";
+  $("pw").focus();
+}
+function showMain(){ $("login").hidden = true; $("main").hidden = false; $("nav").hidden = false; }
+
+$("login").addEventListener("submit", async e => {
+  e.preventDefault();
+  const pw = $("pw").value;
+  if (!pw) { $("loginerr").textContent = "請輸入密碼。"; return; }
+  $("loginbtn").disabled = true;
+  try {
+    const r = await API.call("verifyStaff", pw);
+    TOKEN = r.token; saveToken(TOKEN);
+    showMain(); load();
+  } catch (err) {
+    $("loginerr").textContent = errText(err);
+    $("pw").select();
+  } finally {
+    $("loginbtn").disabled = false;
+  }
+});
+$("pw").addEventListener("input", () => { $("loginerr").textContent = ""; });
+$("logout").addEventListener("click", () => { TOKEN = ""; saveToken(""); DATA = null; showLogin(); });
+
+/* ── 載入 ── */
+async function load(){
+  $("reload").disabled = true;
+  try {
+    DATA = await API.call("getProgress", TOKEN);
+    $("who").textContent = "已登入" + (API.mode === "mock" ? "・本機模擬資料" : "");
+    $("asof").textContent = "更新於 " + new Date().toLocaleTimeString();
+    renderGrid(); renderMessages(); renderData();
+  } catch (e) {
+    if (/密碼/.test(errText(e))) { TOKEN = ""; saveToken(""); return showLogin("登入已過期，請重新輸入密碼。"); }
+    $("who").textContent = "讀不到資料：" + errText(e);
+  } finally {
+    $("reload").disabled = false;
+  }
+}
+$("reload").addEventListener("click", load);
+renderConfigCheck();
+renderPlan();
+updatePreview();
+if (TOKEN) { showMain(); load(); } else showLogin();
+</script>
+</body>
+</html>

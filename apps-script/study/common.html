@@ -1,0 +1,92 @@
+<!-- 受試者頁和施測者頁共用的工具：資料查詢、日期、和後端（Apps Script 或本機模擬）溝通 -->
+<script>
+const CARD_BY_ID = new Map(CARDS.map(c => [c.id, c]));
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, m => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[m]));
+
+// 當地日期 YYYY-MM-DD（「同一天只能做一次」以這個為準）
+function localDate(d, timeZone){
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: timeZone || undefined, year:"numeric", month:"2-digit", day:"2-digit" }).format(d || new Date());
+  } catch (e) {
+    const x = d || new Date(), p = n => String(n).padStart(2, "0");
+    return x.getFullYear() + "-" + p(x.getMonth() + 1) + "-" + p(x.getDate());
+  }
+}
+function timeZone(){ try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { return ""; } }
+function fmtDuration(ms){
+  const s = Math.max(0, Math.round(ms / 1000));
+  return s < 60 ? s + " 秒" : Math.floor(s / 60) + " 分 " + String(s % 60).padStart(2, "0") + " 秒";
+}
+
+const DAYS = 7, PER_DAY = 2;
+const isTestId = pid => /^TEST/i.test(pid || "");
+const categoryName = id => (CATEGORIES.find(c => c.id === id) || { name:id }).name;
+
+// 序列 A 在奇數天先做 Prototype，序列 B 在偶數天先做
+const firstActivityFor = (sequence, day) => ((sequence === "A") === (day % 2 === 1)) ? "prototype" : "duolingo";
+
+// 這組還沒學的字，依影片類別分開（保持 config 清單裡的順序）
+function remainingByCategory(group, learnedIds){
+  const learned = new Set(learnedIds || []);
+  const out = {};
+  CATEGORIES.forEach(c => { out[c.id] = []; });
+  (CONFIG.words[group] || []).forEach(id => {
+    const c = CARD_BY_ID.get(id);
+    if (c && !learned.has(id) && out[c.category]) out[c.category].push(id);
+  });
+  return out;
+}
+
+// 受試者選了某個類別後，今天要學的卡片：先拿這個類別的前 2 個；不夠的話從剩最多字的類別補
+function pickCards(group, learnedIds, category){
+  const rem = remainingByCategory(group, learnedIds);
+  const picks = (rem[category] || []).slice(0, PER_DAY);
+  const order = id => CATEGORIES.findIndex(c => c.id === id);
+  const others = Object.keys(rem).filter(k => k !== category)
+    .sort((a, b) => rem[b].length - rem[a].length || order(a) - order(b));
+  for (const k of others) for (const id of rem[k]) if (picks.length < PER_DAY) picks.push(id);
+  return picks.map(id => CARD_BY_ID.get(id));
+}
+
+// 設定檢查：施測者頁顯示，受試者頁只在出錯時擋下
+function checkConfig(){
+  const errs = [], warns = [];
+  const seen = new Map();
+  const need = DAYS * PER_DAY;
+  Object.entries(CONFIG.words || {}).forEach(([g, ids]) => {
+    if (ids.length !== need) errs.push(g + " 組應該有 " + need + " 個字（" + DAYS + " 天 × " + PER_DAY + " 個），現在是 " + ids.length + " 個");
+    ids.forEach(id => {
+      if (!CARD_BY_ID.has(id)) errs.push(g + " 組的卡片 " + id + " 不在 cards.html 裡");
+      if (seen.has(id)) errs.push(id + " 重複出現（" + seen.get(id) + "、" + g + " 組）");
+      seen.set(id, g + " 組");
+    });
+  });
+  Object.entries(CONFIG.participants).forEach(([pid, p]) => {
+    if (!(CONFIG.words || {})[p.group]) errs.push(pid + " 的組別「" + p.group + "」不在 words 裡");
+    if (p.sequence !== "A" && p.sequence !== "B") errs.push(pid + " 的序列必須是 A 或 B");
+  });
+  if (!CONFIG.participantUrl) warns.push("還沒填 participantUrl（受試者網址），施測者頁的連結和預覽會用目前的網址代替");
+  if (!CONFIG.feedbackFormUrl) warns.push("還沒填 feedbackFormUrl，受試者完成後不會看到回饋表單按鈕");
+  if (!CONFIG.contactHow) warns.push("還沒填 contactHow，受試者頁只會寫聯絡人名字");
+  return { errs, warns };
+}
+
+// 後端：在 Apps Script 裡用 google.script.run，在本機開發時用 dev/mock.js 的模擬
+const API = (function(){
+  if (window.google && google.script && google.script.run) {
+    return {
+      mode: "apps-script",
+      call: (fn, ...args) => new Promise((resolve, reject) =>
+        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args)),
+      params: () => new Promise(resolve => google.script.url.getLocation(loc => resolve(loc.parameter || {})))
+    };
+  }
+  if (window.MOCK_API) return window.MOCK_API;
+  return {
+    mode: "none",
+    call: () => Promise.reject(new Error("沒有後端：請部署到 Apps Script，或用 dev/server.mjs 在本機預覽")),
+    params: () => Promise.resolve(Object.fromEntries(new URLSearchParams(location.search)))
+  };
+})();
+</script>

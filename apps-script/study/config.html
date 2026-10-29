@@ -1,0 +1,38 @@
+<!--
+  研究設定（受試者頁和施測者頁共用，伺服器端 Code.gs 也會讀）
+  /*CONFIG*/ 和 /*END*/ 之間必須是合法的 JSON：字串用雙引號、最後一項後面不能有逗號、不能寫註解。
+
+  participantUrl   受試者用的網址（部署後複製「網頁應用程式」網址，結尾是 /exec）
+  contactName      受試者遇到問題時要找的人
+  contactHow       怎麼聯絡（例如 LINE ID），顯示在受試者頁面
+  feedbackFormUrl  每日回饋表單（Google 表單）的網址；留空就不顯示按鈕
+  feedbackPrefill  表單「預先填入」的欄位代號（entry.xxxx），用來自動帶入編號和「Prototype」；不用就留空
+  estMinutes       開始畫面上寫的預估分鐘數
+  participants     編號 → 組別（X/Y）和序列（A：第 1、3、5、7 天先做 Prototype；B：相反）
+  words            每組在 Prototype 學的 14 個字（卡片 id 見 cards.html）。
+                   受試者每天選一個影片類別，程式從這組還沒學的字裡，依清單順序挑 2 個該類別的字；
+                   該類別只剩 1 個字時，再從剩最多字的類別補 1 個。
+-->
+<script>
+const CONFIG = /*CONFIG*/{
+  "participantUrl": "",
+  "contactName": "Jay",
+  "contactHow": "",
+  "feedbackFormUrl": "",
+  "feedbackPrefill": { "participantEntry": "", "sessionEntry": "", "sessionValue": "Prototype" },
+  "estMinutes": 3,
+  "participants": {
+    "P01": { "group": "X", "sequence": "A" },
+    "P02": { "group": "Y", "sequence": "B" },
+    "P03": { "group": "Y", "sequence": "A" },
+    "P04": { "group": "X", "sequence": "B" },
+    "P05": { "group": "X", "sequence": "A" }
+  },
+  "words": {
+    "X": ["c-standup-03", "c-tvseries-01", "c-tvseries-05", "c-tvseries-11", "c-tvseries-15", "c-lyrics-06", "c-lyrics-05",
+          "c-standup-05", "c-standup-07", "c-standup-08", "c-tvseries-03", "c-lyrics-01", "c-tvseries-10", "c-lyrics-07"],
+    "Y": ["c-standup-04", "c-tvseries-09", "c-tvseries-07", "c-tvseries-17", "c-lyrics-10", "c-lyrics-08", "c-lyrics-11",
+          "c-standup-06", "c-standup-09", "c-tvseries-04", "c-tvseries-16", "c-lyrics-02", "c-lyrics-03", "c-lyrics-12"]
+  }
+}/*END*/;
+</script>
