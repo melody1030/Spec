@@ -100,7 +100,8 @@ if (typeof CONFIG === "undefined") {
 // 這次部署的網址（Apps Script 由伺服器填入；本機預覽是空的，改用 /participant 和 /staff）
 const BASE = "<?= baseUrl ?>";
 const participantBase = CONFIG.participantUrl || BASE || "/participant";
-const staffBase = BASE ? BASE + "?view=staff" : "/staff";
+// getUrl() 在登入多個 Google 帳號時會帶 /u/N/，那種網址打不開，所以優先用 config 裡的網址
+const staffBase = (CONFIG.participantUrl || BASE) ? (CONFIG.participantUrl || BASE) + "?view=staff" : "/staff";
 const go = url => window.open(url, "_top");
 
 // 兩個身份各自展開自己的表單，一次只開一個
