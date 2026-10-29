@@ -62,6 +62,27 @@ For each word, we also give the part of speech, an English definition, a Chinese
 
 Newest entries go at the top.
 
+### 2026-10-29 — 7 definitions changed to the meaning used in the clip
+- The team's protocol asked for 7 words to match their meaning in the clip instead of the PDF definition. Definition, Chinese definition, example sentence and Chinese example were rewritten. The prototype's cloze item for each word was rewritten too, so it tests the clip meaning:
+
+| Word | PDF meaning | Meaning in the clip | Clip line |
+| --- | --- | --- | --- |
+| couple | 夫妻；情侶 | (a couple of) 兩個；幾個 | "a couple things I learned" |
+| rough | 粗糙的 | 難熬的；辛苦的 | "It's got to be rough." |
+| be supposed to | 據說是… | （照規定或照理）應該… | "Supposed to go in the other direction." |
+| lead | 帶領；引導 | （道路、門等）通往 | "every road leads back" |
+| meet | 遇見；碰面 | （兩樣東西）交會；相接 | "where the sky meets the sea" |
+| distance | 距離 | （人與人之間的）疏離；隔閡 | "there's just always been this distance" |
+| sail | 航行（verb） | 船帆（noun） | "the wind in my sail" |
+
+- The target word *be supposed to be sth* is now *be supposed to*, as in the protocol, and *sail* is now a noun.
+- **CEFR levels were not changed.** They still come from the PDF. The team checked them against the English Vocabulary Profile and confirmed them.
+- The team also checked the new definitions and examples against the options in the pre- and post-tests and confirmed they match.
+- `apps-script/study/cards.html` was regenerated with `dev/build-cards.mjs`.
+- **Checked:**
+  - All 43 cards and 43 quiz items pass the format check: every highlight form appears in its sentence, and every answer index is valid.
+  - The new *sail* card renders correctly on the study site.
+
 ### 2026-10-28 — Clear-data button on the researcher page, with safeguards
 - The data section of the researcher page now has a red **清除資料 (clear data)** box. It can delete test data (TEST rows) only, one participant's records, or everything.
 - **Safeguards:**
