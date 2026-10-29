@@ -1,4 +1,4 @@
-# 研究網站：部署成 Apps Script Web App
+# 部署成 Apps Script Web App
 
 這個資料夾有三種頁面：
 
