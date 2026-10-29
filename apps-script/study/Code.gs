@@ -40,11 +40,12 @@ function include(name) {
 
 /* ───────── 設定 ───────── */
 
+// HtmlService 讀檔時會拿掉註解（包括 /*CONFIG*/ 和 /*END*/），所以直接執行 <script> 裡的程式取出 CONFIG
 function config_() {
   const html = include('config');
-  const a = html.indexOf('/*CONFIG*/', html.indexOf('const CONFIG'));
-  const b = html.indexOf('/*END*/', a);
-  return JSON.parse(html.slice(a + '/*CONFIG*/'.length, b));
+  const a = html.indexOf('>', html.indexOf('<script')) + 1;
+  const b = html.indexOf('</script>', a);
+  return new Function(html.slice(a, b) + '\nreturn CONFIG;')();
 }
 
 /* ───────── 施測者密碼 ───────── */
